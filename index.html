@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ARIA Mission Control | RyR Servicios Aduanales</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230D2818'/><text x='16' y='22' text-anchor='middle' fill='%23D4A843' font-size='18' font-weight='800'>A</text></svg>">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#06060a;color:#d4d4d8;min-height:100vh}#root{max-width:1600px;margin:0 auto}</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+
+
+const SB="https://qtlqfeixytqorcuragvb.supabase.co/rest/v1";
+const KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0bHFmZWl4eXRxb3JjdXJhZ3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxMjM0MzIsImV4cCI6MjA3MjY5OTQzMn0.6MfmJRGxBbZtgM-l97YGFhzf5oa09NUKm3m6UnCGcVI";
+const HD={apikey:KEY,Authorization:`Bearer ${KEY}`};
+
+const T={
+  cap:{n:"SALA DE CAPACITACION",e:"\ud83c\udf93",c:"#A78BFA",bg:"#1a1035"},
+  ofi:{n:"CENTRO DE MANDO",e:"\ud83d\udccb",c:"#60A5FA",bg:"#0c1a30"},
+  din:{n:"TESORERIA",e:"\ud83d\udcb0",c:"#FBBF24",bg:"#1a1505"},
+  com:{n:"TORRE DE COMUNICACION",e:"\ud83d\udce1",c:"#34D399",bg:"#051a12"},
+  reg:{n:"LABORATORIO RAG",e:"\ud83e\uddec",c:"#2DD4BF",bg:"#051a1a"},
+  des:{n:"HANGAR DE DESPACHO",e:"\ud83c\udfd7\ufe0f",c:"#FB923C",bg:"#1a1005"},
+  cli:{n:"ATENCION A CLIENTES",e:"\ud83e\udd1d",c:"#C084FC",bg:"#150a28"},
+  sal:{n:"ENFERMERIA",e:"\ud83c\udfe5",c:"#F43F5E",bg:"#1a0510"},
+};
+
+const A=[
+  {name:"LUPA",alias:"La Detective",role:"Escanea errores del equipo y detecta gaps de conocimiento",id:"8KE3",t:"cap",cr:"L 7am",wf:"Academia 1"},
+  {name:"DARWIN",alias:"El Investigador",role:"Investiga regulaciones DOF/SAT y genera briefs de capacitacion",id:"jhlq",t:"cap",cr:"Ma/Ju",wf:"Academia 2"},
+  {name:"CANVAS",alias:"El Artista",role:"Genera presentaciones Canva autonomas desde briefs",id:"mqzt",t:"cap",cr:"Ma/Ju",wf:"Academia 3"},
+  {name:"VIG\u00cdA",alias:"El Centinela",role:"Monitorea DOF diario buscando reformas que impacten a RyR",id:"k3Ou",t:"cap",cr:"Diario",wf:"Academia 4"},
+  {name:"EXAMEN",alias:"El Profesor",role:"Genera quizzes y califica respuestas automaticamente",id:"6D1H",t:"cap",cr:"Mie",wf:"Academia 5"},
+  {name:"FLASH",alias:"El Veloz",role:"Convierte circulares CRITICA en micro-cursos email express",id:"umGE",t:"cap",cr:"Diario",wf:"Academia 6"},
+  {name:"PULSO",alias:"El Persistente",role:"Persigue a quien no completo su evaluacion",id:"pNT2",t:"cap",cr:"Vie",wf:"Academia 7"},
+  {name:"SELLO",alias:"El Validador",role:"Recibe presentaciones via WA para aprobacion de Victor",id:"0EG6",t:"cap",cr:"WH",wf:"Academia 8"},
+  {name:"JEFA",alias:"La Supervisora",role:"Revisa TODOS los pendientes y escala vencidos sin perdon",id:"4Uhr",t:"ofi",cr:"Diario",wf:"Seguimiento 1"},
+  {name:"DIRECTOR",alias:"El Orquestador",role:"Coordina emails de seguimiento entre todo el equipo",id:"pp5M",t:"ofi",cr:"Diario",wf:"Seguimiento 2"},
+  {name:"CORREO",alias:"El Cartero",role:"Redacta y envia emails HTML con tabla de pendientes",id:"SGkL",t:"ofi",cr:"Diario",wf:"Seguimiento 3"},
+  {name:"RADAR",alias:"El Ojo",role:"Monitorea Gmail cada 2h buscando respuestas pendientes",id:"HPXD",t:"ofi",cr:"2h",wf:"Seguimiento 4"},
+  {name:"AUDITOR",alias:"El Critico",role:"Audita calidad de comunicacion y pone calificaciones",id:"WBaI",t:"ofi",cr:"Diario",wf:"Seguimiento 5"},
+  {name:"CIERRE",alias:"El Puntual",role:"5pm revisa correos sin cerrar y reporta",id:"Tz8g",t:"ofi",cr:"5pm",wf:"Seguimiento 6"},
+  {name:"COBRADOR",alias:"El Banquero",role:"Cobranza escalonada 3-5-7 dias con HTML profesional",id:"33GG",t:"din",cr:"Diario",wf:"Finanzas 1"},
+  {name:"SIRENA",alias:"La Alarma",role:"Alerta riesgo financiero por clientes morosos",id:"ogop",t:"din",cr:"Diario",wf:"Finanzas 2"},
+  {name:"FACTURA",alias:"El Contador",role:"Detecta facturas sin complemento de pago",id:"PrPP",t:"din",cr:"Diario",wf:"Finanzas 3"},
+  {name:"AMANECER",alias:"El Madrugador",role:"7am briefing ejecutivo a Victor por WhatsApp",id:"pgFq",t:"din",cr:"7am",wf:"Reportes 1"},
+  {name:"METRICA",alias:"El Analista",role:"KPIs semanales por persona y area",id:"5Y3f",t:"din",cr:"Sem",wf:"Reportes 2"},
+  {name:"RESUMEN",alias:"El Periodista",role:"Reporte semanal ejecutivo viernes 6pm",id:"SCtS",t:"din",cr:"Vi 6pm",wf:"Reportes 3"},
+  {name:"CENTRAL",alias:"La Operadora",role:"Hub comandos WA: 18 comandos incluyendo /reunion /memoria /alertas",id:"Suvq",t:"com",cr:"WH",wf:"WhatsApp 1"},
+  {name:"ASISTENTE",alias:"El Bot",role:"Atiende clientes WA: cotiza, clasifica, recibe docs",id:"4DVt",t:"com",cr:"WH",wf:"WhatsApp 2"},
+  {name:"NEXUS",alias:"El Cerebro",role:"Claude Sonnet + datos Supabase para preguntas complejas",id:"V1Nf",t:"com",cr:"WH",wf:"WhatsApp 3"},
+  {name:"JUEZ",alias:"El Abogado",role:"Respuestas legales formales a requerimientos",id:"u0dw",t:"com",cr:"Diario",wf:"Legal 1"},
+  {name:"ASPIRADORA",alias:"La Ingesta",role:"Descarga circulares CAAAREM y las mete al vector store",id:"Pz3n",t:"reg",cr:"7am",wf:"RAG 1"},
+  {name:"CAMPANA",alias:"La Alerta",role:"Circular CRITICA detectada = notificacion inmediata",id:"4xoV",t:"reg",cr:"7:30",wf:"RAG 2"},
+  {name:"OR\u00c1CULO",alias:"El Sabio",role:"Consultas circulares via Google Chat con RAG semantico",id:"kimb",t:"reg",cr:"WH",wf:"RAG 3"},
+  {name:"ARA\u00d1A",alias:"La Web",role:"Scrapea CAAAREM diario buscando publicaciones nuevas",id:"M3MI",t:"reg",cr:"Diario",wf:"RAG 4"},
+  {name:"CRISTAL",alias:"El Vector",role:"Embeddings para busqueda semantica en 17k+ fragmentos",id:"OyGi",t:"reg",cr:"Diario",wf:"RAG 5"},
+  {name:"ANCLA",alias:"El Maritimo",role:"Rastrea cargas Pochteca y alerta retrasos 5+ dias",id:"cPtq",t:"reg",cr:"Diario",wf:"Pochteca 1"},
+  {name:"LENTE",alias:"El Hawk-Eye",role:"Glosa documental: discrepancias factura-pedimento",id:"4IAE",t:"des",cr:"Gmail",wf:"Op 1"},
+  {name:"ESC\u00c1NER",alias:"El OCR",role:"OCR inteligente extrae datos de documentos escaneados",id:"E8IP",t:"des",cr:"Gmail",wf:"Op 2"},
+  {name:"FILTRO",alias:"El Router",role:"Clasifica documentos aduaneros por tipo y prioridad",id:"6GND",t:"des",cr:"WH",wf:"Op 3"},
+  {name:"BALANZA",alias:"El Justo",role:"Cruza factura vs pedimento campo por campo",id:"QuaV",t:"des",cr:"WH",wf:"Op 4"},
+  {name:"ESCUDO",alias:"El Guardian",role:"Verifica clientes diario contra listas SAT 69-B",id:"PjxC",t:"des",cr:"Diario",wf:"Op 5"},
+  {name:"CENTINELA",alias:"El Multas",role:"Busca errores en pedimentos que generen multas SAT",id:"EsJa",t:"des",cr:"Diario",wf:"Op 6"},
+  {name:"SELLO-Q",alias:"El ISO",role:"Monitorea vencimientos ISO 9001 y OEA",id:"Fh1e",t:"des",cr:"Diario",wf:"Op 7"},
+  {name:"PERFIL",alias:"El KYC",role:"Due diligence y validacion de identidad clientes",id:"VnaL",t:"des",cr:"WH",wf:"Op 8"},
+  {name:"INTEGRAL",alias:"El Univar",role:"Correos Univar: clasifica, archiva y responde",id:"k6Nf",t:"cli",cr:"Gmail",wf:"Univar 1"},
+  {name:"CARGA",alias:"El Trucker",role:"Operaciones base Univar: pedimentos, pagos, navieras",id:"F8hD",t:"cli",cr:"Gmail",wf:"Univar 2"},
+  {name:"COTIZA",alias:"El Rapido",role:"Cotizaciones PDF desde solicitudes por email",id:"1jBz",t:"cli",cr:"Gmail",wf:"Cotiz 1"},
+  {name:"CHAT-Q",alias:"El Asesor",role:"Cotizaciones interactivas por chat tiempo real",id:"UTnR",t:"cli",cr:"WH",wf:"Cotiz 2"},
+  {name:"ARCHIVO",alias:"El Organizado",role:"Expedientes electronicos 1.4.14 via chat",id:"Qz05",t:"cli",cr:"WH",wf:"Util 1"},
+  {name:"PALMA",alias:"El Relajado",role:"Solicitudes de vacaciones y dias libres",id:"fPVx",t:"cli",cr:"WH",wf:"Util 2"},
+  {name:"FANTASMA",alias:"El Legacy",role:"Workflow heredado pendiente de desactivar",id:"LhQW",t:"cli",cr:"\u2014",wf:"Util 3"},
+  {name:"BRAINSTORM",alias:"El Pensador",role:"Brainstorm diario 7pm con analisis cruzado de agentes y memoria",id:"PdiZ",t:"cli",cr:"7pm",wf:"Util 4"},
+  {name:"CONVOCADOR",alias:"El Moderador",role:"Reuniones on-demand por tema via /reunion en WhatsApp",id:"E0HL",t:"cli",cr:"WH",wf:"Util 5"},
+  {name:"DOCTOR",alias:"El Diagnostico",role:"Escanea TODOS los workflows buscando bugs, nodos rotos y configs invalidas",id:"t8EV",t:"sal",cr:"6am",wf:"Salud 1"},
+  {name:"CIRUJANO",alias:"El Reparador",role:"Aplica auto-fixes seguros y escala lo riesgoso a Victor",id:"sFIw",t:"sal",cr:"6:15am",wf:"Salud 2"},
+  {name:"ENFERMERA",alias:"La Vigilante",role:"Monitorea fallos cada 2h y auto-desactiva workflows con 5+ errores",id:"jhVG",t:"sal",cr:"2h",wf:"Salud 3"},
+];
+
+const Fc=(t,c,s=80)=>{const cx=s/2,cy=s/2,r=s*.4,ey=cy-s*.04,lx=cx-s*.14,rx=cx+s*.14,R=s*.09,pR=R*.55;const eyes=`<ellipse cx="${lx}" cy="${ey}" rx="${R}" ry="${R*1.15}" fill="#fff"/><ellipse cx="${rx}" cy="${ey}" rx="${R}" ry="${R*1.15}" fill="#fff"/><circle cx="${lx+1.5}" cy="${ey+1}" r="${pR}" fill="#0f0f1a"/><circle cx="${rx+1.5}" cy="${ey+1}" r="${pR}" fill="#0f0f1a"/><circle cx="${lx+2}" cy="${ey-.5}" r="${pR*.3}" fill="#fff"/><circle cx="${rx+2}" cy="${ey-.5}" r="${pR*.3}" fill="#fff"/>`;const sm=`<path d="M${cx-s*.09} ${cy+s*.14}Q${cx} ${cy+s*.21} ${cx+s*.09} ${cy+s*.14}" stroke="#fff" fill="none" stroke-width="${s*.028}" stroke-linecap="round"/>`;const fl=`<line x1="${cx-s*.07}" y1="${cy+s*.15}" x2="${cx+s*.07}" y2="${cy+s*.15}" stroke="#fff" stroke-width="${s*.028}" stroke-linecap="round"/>`;const hd=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${c}"/>`;const P={detective:hd+eyes+sm,boss:hd+eyes+sm+`<rect x="${cx-s*.25}" y="${cy-s*.39}" width="${s*.5}" height="${s*.11}" rx="${s*.035}" fill="#FDE68A"/>`,brain:hd+eyes+sm+`<circle cx="${cx}" cy="${cy-s*.33}" r="${s*.07}" fill="none" stroke="#FDE68A" stroke-width="${s*.02}"/><circle cx="${cx}" cy="${cy-s*.33}" r="${s*.025}" fill="#FDE68A"><animate attributeName="opacity" values=".4;1;.4" dur="2s" repeatCount="indefinite"/></circle>`,shield:hd+eyes+fl+`<path d="M${cx} ${cy-s*.42}L${cx-s*.17} ${cy-s*.3}v${s*.12}c0 ${s*.09} ${s*.17} ${s*.17} ${s*.17} ${s*.17}s${s*.17}-${s*.08} ${s*.17}-${s*.17}v-${s*.12}z" fill="none" stroke="#22C55E" stroke-width="${s*.018}" opacity=".4"/>`,scanner:hd+eyes+fl+`<line x1="${cx-s*.2}" y1="${cy+s*.06}" x2="${cx+s*.2}" y2="${cy+s*.06}" stroke="#EF4444" stroke-width="${s*.018}" opacity=".5"><animate attributeName="y1" values="${cy-s*.02};${cy+s*.14};${cy-s*.02}" dur="2s" repeatCount="indefinite"/><animate attributeName="y2" values="${cy-s*.02};${cy+s*.14};${cy-s*.02}" dur="2s" repeatCount="indefinite"/></line>`,stethoscope:hd+eyes+sm+`<circle cx="${cx}" cy="${cy+s*.28}" r="${s*.06}" fill="none" stroke="#F43F5E" stroke-width="${s*.025}"/><path d="M${cx-s*.06} ${cy+s*.22}Q${cx-s*.15} ${cy-s*.1} ${cx-s*.05} ${cy-s*.2}" stroke="#F43F5E" fill="none" stroke-width="${s*.02}"/>`,scalpel:hd+eyes+fl+`<line x1="${cx+s*.15}" y1="${cy-s*.35}" x2="${cx+s*.28}" y2="${cy-s*.15}" stroke="#F43F5E" stroke-width="${s*.03}" stroke-linecap="round"/><circle cx="${cx+s*.28}" cy="${cy-s*.15}" r="${s*.03}" fill="#F43F5E"/>`,nurse:hd+eyes+sm+`<rect x="${cx-s*.12}" y="${cy-s*.42}" width="${s*.24}" height="${s*.09}" rx="${s*.02}" fill="#F43F5E"/><line x1="${cx}" y1="${cy-s*.44}" x2="${cx}" y2="${cy-s*.31}" stroke="#fff" stroke-width="${s*.02}"/><line x1="${cx-s*.06}" y1="${cy-s*.375}" x2="${cx+s*.06}" y2="${cy-s*.375}" stroke="#fff" stroke-width="${s*.02}"/>`,ghost:`<circle cx="${cx}" cy="${cy}" r="${r}" fill="#27272a"/><ellipse cx="${lx}" cy="${ey}" rx="${R*.9}" ry="${R}" fill="#444"/><ellipse cx="${rx}" cy="${ey}" rx="${R*.9}" ry="${R}" fill="#444"/>`};return P[t]||hd+eyes+sm};
+
+const faceMap={
+  "Academia 1":"detective","Academia 2":"detective","Academia 3":"detective","Academia 4":"detective",
+  "Academia 5":"detective","Academia 6":"detective","Academia 7":"detective","Academia 8":"detective",
+  "Seguimiento 1":"boss","Seguimiento 2":"detective","Seguimiento 3":"detective","Seguimiento 4":"detective",
+  "Seguimiento 5":"detective","Seguimiento 6":"detective","Finanzas 1":"detective","Finanzas 2":"detective",
+  "Finanzas 3":"detective","Reportes 1":"detective","Reportes 2":"detective","Reportes 3":"detective",
+  "WhatsApp 1":"detective","WhatsApp 2":"detective","WhatsApp 3":"brain","Legal 1":"detective",
+  "RAG 1":"detective","RAG 2":"detective","RAG 3":"detective","RAG 4":"detective","RAG 5":"detective",
+  "Pochteca 1":"detective","Op 1":"scanner","Op 2":"scanner","Op 3":"detective","Op 4":"detective",
+  "Op 5":"shield","Op 6":"detective","Op 7":"detective","Op 8":"detective",
+  "Univar 1":"detective","Univar 2":"detective","Cotiz 1":"detective","Cotiz 2":"detective",
+  "Util 1":"detective","Util 2":"detective","Util 3":"ghost","Util 4":"brain","Util 5":"brain",
+  "Salud 1":"stethoscope","Salud 2":"scalpel","Salud 3":"nurse"
+};
+
+const Av=({a,sz=46,on})=>{const c=T[a.t]?.c||"#666";const face=faceMap[a.wf]||"detective";return(<div style={{position:"relative",width:sz,height:sz,flexShrink:0}}>{on&&<div style={{position:"absolute",inset:-4,borderRadius:"50%",background:c,opacity:.12,animation:"glow 3s ease-in-out infinite"}}/>}<svg viewBox="0 0 80 80" width={sz} height={sz}><g dangerouslySetInnerHTML={{__html:Fc(face,c,80)}}/></svg></div>)};
+
+const tA=d=>{if(!d)return"";const s=Math.floor((Date.now()-new Date(d).getTime())/1000);if(s<60)return s+"s";if(s<3600)return Math.floor(s/60)+"m";if(s<86400)return Math.floor(s/3600)+"h";return Math.floor(s/86400)+"d"};
+
+const SD=({s})=><span style={{width:7,height:7,borderRadius:"50%",display:"inline-block",flexShrink:0,background:s==="success"?"#22C55E":s==="error"?"#EF4444":s==="online"?"#22C55E":"#27272a",boxShadow:s==="success"||s==="online"?"0 0 6px rgba(34,197,94,.4)":s==="error"?"0 0 6px rgba(239,68,68,.4)":"none"}}/>;
+
+const MissionControlApp = function MissionControl(){
+  const[logs,setLogs]=useState([]);const[meetings,setMeetings]=useState([]);const[memories,setMemories]=useState([]);const[alerts,setAlerts]=useState([]);const[health,setHealth]=useState([]);
+  const[filter,setFilter]=useState("all");const[view,setView]=useState("grid");const[sel,setSel]=useState(null);const[ld,setLd]=useState(true);const[lr,setLr]=useState(null);
+
+  const f2=useCallback(async()=>{
+    try{const[a,b,c,d,e]=await Promise.all([
+      fetch(`${SB}/aria_agent_log?order=created_at.desc&limit=500`,{headers:HD}).then(r=>r.json()).catch(()=>[]),
+      fetch(`${SB}/aria_agent_meetings?order=created_at.desc&limit=20`,{headers:HD}).then(r=>r.json()).catch(()=>[]),
+      fetch(`${SB}/aria_memory?is_active=eq.true&order=relevance_score.desc&limit=20`,{headers:HD}).then(r=>r.json()).catch(()=>[]),
+      fetch(`${SB}/aria_proactive_alerts?status=eq.pending&order=created_at.desc&limit=10`,{headers:HD}).then(r=>r.json()).catch(()=>[]),
+      fetch(`${SB}/aria_health_checks?status=eq.open&order=created_at.desc&limit=15`,{headers:HD}).then(r=>r.json()).catch(()=>[]),
+    ]);if(Array.isArray(a))setLogs(a);if(Array.isArray(b))setMeetings(b);if(Array.isArray(c))setMemories(c);if(Array.isArray(d))setAlerts(d);if(Array.isArray(e))setHealth(e);}catch(e){}
+    setLd(false);setLr(new Date());
+  },[]);
+  useEffect(()=>{f2();const i=setInterval(f2,20000);return()=>clearInterval(i)},[f2]);
+
+  const st={},al={};
+  logs.forEach(l=>{const k=l.agent_name;if(!st[k])st[k]={last:l,n:0,ok:0,er:0,it:0};if(!al[k])al[k]=[];st[k].n++;if(l.status==="success")st[k].ok++;if(l.status==="error")st[k].er++;st[k].it+=l.items_processed||0;if(al[k].length<3)al[k].push(l)});
+
+  const teams=Object.keys(T);const ft=filter==="all"?teams:[filter];
+  const totalAgents=Object.keys(st).length;const totalRuns=logs.length;const totalErrors=logs.filter(l=>l.status==="error").length;
+
+  return(
+    <div style={{background:"#06060a",color:"#d4d4d8",minHeight:"100vh",fontFamily:"'JetBrains Mono','Fira Code',monospace"}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');@keyframes glow{0%,100%{transform:scale(1);opacity:.1}50%{transform:scale(1.3);opacity:.2}}@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}@keyframes ticker{0%{transform:translateX(100%)}100%{transform:translateX(-200%)}}.cd{background:#0d0d12;border:1px solid #1a1a24;border-radius:12px;padding:14px;cursor:pointer;transition:all .3s;position:relative;overflow:hidden}.cd:hover{border-color:#2a2a3a;transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.5)}.cd.on{border-color:var(--tc);box-shadow:0 0 20px var(--tc-glow)}.cd::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--tc),transparent);opacity:.3}.rm{border-radius:16px;padding:16px;margin-bottom:20px;border:1px solid #1a1a24;position:relative;overflow:hidden}.rm::after{content:'';position:absolute;top:0;right:0;width:120px;height:120px;background:radial-gradient(circle,var(--tc-glow) 0%,transparent 70%);opacity:.04;pointer-events:none}.tk{overflow:hidden;white-space:nowrap;background:#0a0a10;border-top:1px solid #1a1a24;border-bottom:1px solid #1a1a24;padding:6px 0;font-size:11px}.tk span{display:inline-block;animation:ticker 60s linear infinite}`}</style>
+
+      {/* TOP BAR */}
+      <div style={{padding:"16px 24px",display:"flex",alignItems:"center",gap:14,borderBottom:"1px solid #1a1a24"}}>
+        <div style={{width:38,height:38,borderRadius:10,background:"linear-gradient(135deg,#1A5C3A,#0a1f12)",display:"flex",alignItems:"center",justifyContent:"center",border:"1px solid #1A5C3A40"}}><span style={{color:"#D4A843",fontSize:18,fontWeight:700}}>A</span></div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:16,fontWeight:600,letterSpacing:1,textTransform:"uppercase",color:"#e4e4e7"}}>ARIA Mission Control</div>
+          <div style={{fontSize:10,color:"#52525b"}}>{totalAgents}/50 agents \u2022 {totalRuns} runs \u2022 {memories.length} memories \u2022 {alerts.length} alerts{lr&&<span> \u2014 {lr.toLocaleTimeString()}</span>}</div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:6,background:"#0d1a0f",border:"1px solid #1a3a1f"}}><SD s="online"/><span style={{fontSize:10,color:"#22C55E",fontWeight:500,animation:"blink 2s infinite"}}>LIVE</span></div>
+        <button onClick={f2} style={{padding:"5px 12px",borderRadius:6,border:"1px solid #27272a",background:"#0d0d12",color:"#71717a",fontSize:10,cursor:"pointer"}}>{ld?"...":"REFRESH"}</button>
+      </div>
+
+      {/* TICKER */}
+      <div className="tk" style={{color:"#3f3f46"}}><span>{logs.slice(0,12).map(l=>{const ag=A.find(x=>x.wf===l.agent_name);return`${ag?.name||l.agent_name}: ${l.status==="success"?"OK":"ERR"} (${tA(l.created_at)})`}).join("  \u25cf  ")+(logs.length===0?"  Esperando actividad...  \u25cf  50 agentes  \u25cf  Supabase live":"  \u25cf  ")}</span></div>
+
+      {/* TABS */}
+      <div style={{padding:"12px 24px",display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+        {["grid","feed","meetings","memory","alerts"].map(v=>(<button key={v} onClick={()=>setView(v)} style={{padding:"6px 16px",borderRadius:6,fontSize:11,fontWeight:500,border:"1px solid "+(view===v?"#2a2a3a":"transparent"),cursor:"pointer",background:view===v?"#1a1a24":"transparent",color:view===v?"#fff":"#52525b"}}>{v==="grid"?"Mission Rooms":v==="feed"?"Activity":v==="meetings"?"Reuniones":v==="memory"?`Memoria (${memories.length})`:`Alertas (${alerts.length})`}</button>))}
+        <div style={{flex:1}}/>
+        {view==="grid"&&<div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+          <button onClick={()=>setFilter("all")} style={{padding:"4px 12px",borderRadius:6,fontSize:10,border:"none",cursor:"pointer",fontWeight:500,textTransform:"uppercase",background:filter==="all"?"#1a1a24":"transparent",color:filter==="all"?"#fff":"#3f3f46"}}>All</button>
+          {teams.map(k=>(<button key={k} onClick={()=>setFilter(k)} style={{padding:"4px 12px",borderRadius:6,fontSize:10,border:"none",cursor:"pointer",fontWeight:500,background:filter===k?T[k].c+"18":"transparent",color:filter===k?T[k].c:"#3f3f46"}}>{T[k].e}</button>))}
+        </div>}
+      </div>
+
+      <div style={{padding:"0 24px 24px"}}>
+        {/* MISSION ROOMS */}
+        {view==="grid"&&ft.map(tk=>{const tm=T[tk];const agents=A.filter(a=>a.t===tk);const onC=agents.filter(a=>st[a.wf]).length;return(
+          <div key={tk} className="rm" style={{"--tc":tm.c,"--tc-glow":tm.c+"30",background:tm.bg,borderColor:tm.c+"15"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+              <span style={{fontSize:22}}>{tm.e}</span>
+              <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:tm.c,letterSpacing:1.5,textTransform:"uppercase"}}>{tm.n}</div><div style={{fontSize:9,color:"#52525b"}}>{onC}/{agents.length} reportando</div></div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:10}}>
+              {agents.map(a=>{const s=st[a.wf];const on=!!s;const rate=s?Math.round(s.ok/Math.max(s.n,1)*100):0;const l3=al[a.wf]||[];const op=sel===a.id;return(
+                <div key={a.id} className={"cd"+(on?" on":"")} style={{"--tc":tm.c,"--tc-glow":tm.c+"20"}} onClick={()=>setSel(op?null:a.id)}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                    <Av a={a} sz={42} on={on}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:14,fontWeight:700,color:tm.c}}>{a.name}</span><SD s={on?s.last.status:"off"}/></div>
+                      <div style={{fontSize:10,color:"#71717a"}}>{a.alias}</div>
+                    </div>
+                    <div style={{textAlign:"right"}}><div style={{fontSize:9,padding:"2px 6px",borderRadius:4,background:tm.c+"12",color:tm.c,fontWeight:600}}>{a.cr}</div>{s&&<div style={{fontSize:9,color:"#3f3f46",marginTop:2}}>{tA(s.last.created_at)}</div>}</div>
+                  </div>
+                  <div style={{fontSize:10,color:"#52525b",lineHeight:1.5,marginBottom:8,minHeight:28,borderLeft:`2px solid ${tm.c}20`,paddingLeft:8}}>{a.role}</div>
+                  {s?<div style={{marginBottom:6}}><div style={{background:"#1a1a24",borderRadius:3,height:3,overflow:"hidden",marginBottom:3}}><div style={{width:rate+"%",height:"100%",borderRadius:3,background:rate>80?"#22C55E":rate>50?"#FBBF24":"#EF4444",transition:"width .6s ease"}}/></div><div style={{display:"flex",gap:6,fontSize:9,color:"#3f3f46"}}><span style={{color:"#22C55E"}}>{s.ok} ok</span>{s.er>0&&<span style={{color:"#EF4444"}}>{s.er} err</span>}<span style={{marginLeft:"auto"}}>{s.it} items</span><span style={{color:tm.c}}>{rate}%</span></div></div>:<div style={{height:3,background:"#1a1a24",borderRadius:3,marginBottom:6}}/>}
+                  <div style={{borderTop:`1px solid ${tm.c}10`,paddingTop:6}}>{l3.length>0?l3.map((l,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"2px 0",fontSize:9}}><SD s={l.status}/><span style={{color:"#52525b",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.action}</span><span style={{color:"#27272a"}}>{tA(l.created_at)}</span></div>)):<div style={{fontSize:9,color:"#1a1a24",fontStyle:"italic"}}>awaiting first signal...</div>}</div>
+                  {op&&<div style={{marginTop:8,padding:10,background:"#08080c",borderRadius:8,fontSize:9,color:"#52525b",lineHeight:1.8}}><div>workflow: {a.wf}</div><div>id: {a.id}</div><div>room: <span style={{color:tm.c}}>{tm.n}</span></div>{s&&<div>total: {s.n} runs | {s.it} items</div>}</div>}
+                </div>)})}
+            </div>
+          </div>)})}
+
+        {/* ACTIVITY LOG */}
+        {view==="feed"&&<div style={{background:"#0a0a10",borderRadius:12,border:"1px solid #1a1a24",maxHeight:600,overflowY:"auto"}}>{logs.length===0?<div style={{padding:"60px 20px",textAlign:"center",fontSize:13,color:"#27272a"}}>Awaiting transmissions...</div>:logs.slice(0,80).map(l=>{const ag=A.find(x=>x.wf===l.agent_name);const tm=ag?T[ag.t]:{c:"#555"};return(<div key={l.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 16px",borderBottom:"1px solid #111118",fontSize:11}}>{ag&&<Av a={ag} sz={24}/>}<SD s={l.status}/><span style={{fontWeight:600,color:tm.c,minWidth:80}}>{ag?.name||l.agent_name}</span><span style={{color:"#3f3f46",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.action}</span>{l.items_processed>0&&<span style={{color:"#27272a",fontSize:10}}>{l.items_processed}x</span>}<span style={{color:"#1a1a24",fontSize:10}}>{tA(l.created_at)}</span></div>)})}</div>}
+
+        {/* MEETINGS */}
+        {view==="meetings"&&<div><div style={{fontSize:12,color:"#52525b",marginBottom:12}}>Reuniones \u2014 automaticas diario 7pm + on-demand via /reunion</div>{meetings.length===0?<div style={{padding:40,textAlign:"center",fontSize:12,color:"#27272a"}}>Primera reunion hoy a las 7pm</div>:<div style={{display:"grid",gap:8}}>{meetings.map(m=>{const dc=m.decision||"pendiente";const DC={pendiente:"#FBBF24",aprobada:"#22C55E",editada:"#60A5FA",rechazada:"#EF4444"};return(<div key={m.id} style={{background:"#0d0d12",border:"1px solid #1a1a24",borderRadius:12,padding:"14px 16px",borderLeft:`3px solid ${DC[dc]||"#FBBF24"}`}}><div style={{display:"flex",gap:6,alignItems:"center"}}><span style={{fontSize:13,fontWeight:600}}>{m.meeting_name||"Reunion"}</span>{m.is_on_demand&&<span style={{fontSize:8,padding:"1px 6px",borderRadius:4,background:"#8B5CF620",color:"#8B5CF6",fontWeight:600}}>ON-DEMAND</span>}<span style={{fontSize:8,padding:"1px 6px",borderRadius:4,background:`${DC[dc]||"#FBBF24"}15`,color:DC[dc]||"#FBBF24",fontWeight:600,textTransform:"uppercase"}}>{dc}</span></div><div style={{fontSize:10,color:"#3f3f46",marginTop:3}}>{(m.topic||"").substring(0,100)}</div><div style={{display:"flex",gap:8,marginTop:6,fontSize:9,color:"#27272a"}}><span>{(m.insights||[]).length} insights</span><span>{(m.proposals||[]).length} propuestas</span><span style={{marginLeft:"auto"}}>{tA(m.created_at)}</span></div></div>)})}</div>}</div>}
+
+        {/* MEMORY */}
+        {view==="memory"&&<div><div style={{fontSize:12,color:"#52525b",marginBottom:12}}>\ud83e\udde0 Memoria ARIA \u2014 {memories.length} memorias activas, auto-decay 30d</div><div style={{display:"grid",gap:8}}>{memories.map(m=>{const emoji={decision:"\u2705",pattern:"\ud83d\udd04",learning:"\ud83d\udca1",context:"\ud83d\udccc",preference:"\u2699\ufe0f"}[m.memory_type]||"\ud83d\udcdd";const catColor={cobranza:"#FBBF24",operacion:"#FB923C",regulatorio:"#EF4444",equipo:"#60A5FA",cliente:"#34D399",tecnologia:"#8B5CF6",general:"#71717a"}[m.category]||"#555";return(<div key={m.id} style={{background:"#0d0d12",border:"1px solid #1a1a24",borderRadius:10,padding:"12px 16px",borderLeft:`3px solid ${catColor}`}}><div style={{display:"flex",gap:8,alignItems:"center",marginBottom:4}}><span style={{fontSize:14}}>{emoji}</span><span style={{fontSize:9,padding:"2px 8px",borderRadius:4,background:catColor+"18",color:catColor,fontWeight:600,textTransform:"uppercase"}}>{m.category}</span><span style={{fontSize:9,padding:"2px 8px",borderRadius:4,background:"#1a1a24",color:"#52525b"}}>{m.memory_type}</span><span style={{marginLeft:"auto",fontSize:9,color:"#27272a"}}>rel: {(m.relevance_score||0).toFixed(2)}</span></div><div style={{fontSize:11,color:"#d4d4d8",lineHeight:1.6}}>{m.content}</div>{m.tags?.length>0&&<div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}}>{m.tags.map((t,i)=><span key={i} style={{fontSize:8,padding:"1px 6px",borderRadius:4,background:"#1a1a24",color:"#3f3f46"}}>#{t}</span>)}</div>}</div>)})}</div></div>}
+
+        {/* ALERTS */}
+        {view==="alerts"&&<div><div style={{fontSize:12,color:"#52525b",marginBottom:12}}>\ud83d\udea8 Alertas Proactivas \u2014 {alerts.length} pendientes + {health.length} health checks abiertos</div>{alerts.length===0&&health.length===0?<div style={{padding:40,textAlign:"center",fontSize:13,color:"#27272a"}}>\u2705 Sin alertas pendientes. Todo bajo control.</div>:<div style={{display:"grid",gap:8}}>{alerts.map(a=>{const sev={critical:"#EF4444",warning:"#FBBF24",info:"#60A5FA"}[a.severity]||"#555";return(<div key={a.id} style={{background:"#0d0d12",border:"1px solid #1a1a24",borderRadius:10,padding:"12px 16px",borderLeft:`3px solid ${sev}`}}><div style={{display:"flex",gap:6,alignItems:"center"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:4,background:sev+"18",color:sev,fontWeight:700,textTransform:"uppercase"}}>{a.severity}</span><span style={{fontSize:12,fontWeight:600,color:"#e4e4e7"}}>{a.title}</span></div>{a.body&&<div style={{fontSize:10,color:"#52525b",marginTop:4}}>{a.body}</div>}{a.suggested_action&&<div style={{fontSize:10,color:"#34D399",marginTop:4}}>\u2192 {a.suggested_action}</div>}<div style={{fontSize:9,color:"#27272a",marginTop:4}}>{tA(a.created_at)} \u2022 {(a.source_agents||[]).join(", ")}</div></div>)})}{health.length>0&&<div style={{marginTop:12}}><div style={{fontSize:11,fontWeight:600,color:"#F43F5E",marginBottom:8}}>\ud83c\udfe5 Health Checks Abiertos</div>{health.map(h=>{const sev={critical:"#EF4444",error:"#FB923C",warning:"#FBBF24",info:"#60A5FA"}[h.severity]||"#555";return(<div key={h.id} style={{background:"#0d0d12",border:"1px solid #1a1a24",borderRadius:8,padding:"10px 14px",borderLeft:`2px solid ${sev}`,marginBottom:6}}><div style={{fontSize:11,color:"#d4d4d8"}}>{h.issue}</div><div style={{fontSize:9,color:"#3f3f46",marginTop:3}}>{h.workflow_name} \u2022 {h.check_type} \u2022 {tA(h.created_at)}</div></div>)})}</div>}</div>}</div>}
+      </div>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(MissionControlApp));
+</script>
+</body>
+</html>
