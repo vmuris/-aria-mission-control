@@ -3,89 +3,244 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>ARIA Mission Control | RyR Servicios Aduanales</title>
+<title>ARIA Observatory v3 | RyR Servicios Aduanales</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230D2818'/><text x='16' y='22' text-anchor='middle' fill='%23D4A843' font-size='18' font-weight='800'>A</text></svg>">
-<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#06060a;color:#d4d4d8;min-height:100vh}#root{max-width:1600px;margin:0 auto}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#06060a;color:#d4d4d8;min-height:100vh;font-family:'JetBrains Mono','Fira Code',monospace}
+#root{max-width:1700px;margin:0 auto}
+@keyframes glow{0%,100%{transform:scale(1);opacity:.1}50%{transform:scale(1.35);opacity:.22}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes ticker{0%{transform:translateX(100%)}100%{transform:translateX(-200%)}}
+@keyframes dots{0%,20%{content:"."}40%{content:".."}60%,100%{content:"..."}}
+@keyframes pulse-red{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.45)}70%{box-shadow:0 0 0 12px rgba(239,68,68,0)}}
+.cd{background:#0d0d12;border:1px solid #1a1a24;border-radius:12px;padding:14px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden}
+.cd:hover{border-color:#2a2a3a;transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,.55)}
+.cd.on{border-color:var(--tc);box-shadow:0 0 18px var(--tc-glow)}
+.cd::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--tc),transparent);opacity:.35}
+.rm{border-radius:16px;padding:16px;margin-bottom:20px;border:1px solid #1a1a24;position:relative;overflow:hidden}
+.rm::after{content:'';position:absolute;top:0;right:0;width:160px;height:160px;background:radial-gradient(circle,var(--tc-glow) 0%,transparent 70%);opacity:.06;pointer-events:none}
+.tk{overflow:hidden;white-space:nowrap;background:#0a0a10;border-top:1px solid #1a1a24;border-bottom:1px solid #1a1a24;padding:6px 0;font-size:11px}
+.tk span{display:inline-block;animation:ticker 80s linear infinite}
+.loader::after{content:".";animation:dots 1.2s steps(3,end) infinite}
+.bdg{font-size:9px;padding:2px 7px;border-radius:4px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;display:inline-flex;align-items:center;gap:4px}
+.btn{min-width:40px;min-height:32px;padding:6px 14px;border-radius:6px;font-size:11px;cursor:pointer;border:1px solid transparent;font-family:inherit;transition:all .15s}
+.btn:hover{border-color:#2a2a3a}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:90;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;backdrop-filter:blur(4px)}
+.modal{background:#0a0a10;border:1px solid #27272a;border-radius:14px;padding:24px;max-width:720px;width:100%;position:relative}
+.modal-close{position:absolute;top:14px;right:14px;background:#1a1a24;border:none;color:#a1a1aa;cursor:pointer;width:32px;height:32px;border-radius:6px;font-size:14px;font-family:inherit}
+.modal-close:hover{background:#27272a;color:#fff}
+details summary{cursor:pointer;padding:6px 0;color:#71717a;font-size:11px;user-select:none}
+details summary:hover{color:#a1a1aa}
+.spark-bar{flex:1;min-width:4px;background:var(--tc);border-radius:1px;opacity:.5;transition:opacity .2s}
+.spark-bar:hover{opacity:1}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:#06060a}
+::-webkit-scrollbar-thumb{background:#1a1a24;border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#27272a}
+</style>
 </head>
 <body>
 <div id="root"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="text/babel">
+const { useState, useEffect, useCallback, useMemo } = React;
 
+const SB = "https://qtlqfeixytqorcuragvb.supabase.co/rest/v1";
+const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0bHFmZWl4eXRxb3JjdXJhZ3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxMjM0MzIsImV4cCI6MjA3MjY5OTQzMn0.6MfmJRGxBbZtgM-l97YGFhzf5oa09NUKm3m6UnCGcVI";
+const HD = { apikey: KEY, Authorization: `Bearer ${KEY}` };
 
-const SB="https://qtlqfeixytqorcuragvb.supabase.co/rest/v1";
-const KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0bHFmZWl4eXRxb3JjdXJhZ3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxMjM0MzIsImV4cCI6MjA3MjY5OTQzMn0.6MfmJRGxBbZtgM-l97YGFhzf5oa09NUKm3m6UnCGcVI";
-const HD={apikey:KEY,Authorization:`Bearer ${KEY}`};
-
-const T={
-  cap:{n:"SALA DE CAPACITACION",e:"\ud83c\udf93",c:"#A78BFA",bg:"#1a1035"},
-  ofi:{n:"CENTRO DE MANDO",e:"\ud83d\udccb",c:"#60A5FA",bg:"#0c1a30"},
-  din:{n:"TESORERIA",e:"\ud83d\udcb0",c:"#FBBF24",bg:"#1a1505"},
-  com:{n:"TORRE DE COMUNICACION",e:"\ud83d\udce1",c:"#34D399",bg:"#051a12"},
-  reg:{n:"LABORATORIO RAG",e:"\ud83e\uddec",c:"#2DD4BF",bg:"#051a1a"},
-  des:{n:"HANGAR DE DESPACHO",e:"\ud83c\udfd7\ufe0f",c:"#FB923C",bg:"#1a1005"},
-  cli:{n:"ATENCION A CLIENTES",e:"\ud83e\udd1d",c:"#C084FC",bg:"#150a28"},
-  sal:{n:"ENFERMERIA",e:"\ud83c\udfe5",c:"#F43F5E",bg:"#1a0510"},
+// 9 MISSION ROOMS
+const T = {
+  cap: { n:"SALA DE CAPACITACION",  e:"🎓", c:"#A78BFA", bg:"#1a1035" },
+  ofi: { n:"CENTRO DE MANDO",       e:"📋", c:"#60A5FA", bg:"#0c1a30" },
+  din: { n:"TESORERIA",             e:"💰", c:"#FBBF24", bg:"#1a1505" },
+  com: { n:"TORRE DE COMUNICACION", e:"📡", c:"#34D399", bg:"#051a12" },
+  reg: { n:"LABORATORIO RAG",       e:"🧬", c:"#2DD4BF", bg:"#051a1a" },
+  des: { n:"HANGAR DE DESPACHO",    e:"🏗️", c:"#FB923C", bg:"#1a1005" },
+  cli: { n:"ATENCION A CLIENTES",   e:"🤝", c:"#C084FC", bg:"#150a28" },
+  sal: { n:"ENFERMERIA",            e:"🏥", c:"#F43F5E", bg:"#1a0510" },
+  rh:  { n:"PULSO RH",              e:"👥", c:"#F59E0B", bg:"#1a1305" },
 };
 
-const A=[
-  {name:"LUPA",alias:"La Detective",role:"Escanea errores del equipo y detecta gaps de conocimiento",id:"8KE3",t:"cap",cr:"L 7am",wf:"Academia 1"},
-  {name:"DARWIN",alias:"El Investigador",role:"Investiga regulaciones DOF/SAT y genera briefs de capacitacion",id:"jhlq",t:"cap",cr:"Ma/Ju",wf:"Academia 2"},
-  {name:"CANVAS",alias:"El Artista",role:"Genera presentaciones Canva autonomas desde briefs",id:"mqzt",t:"cap",cr:"Ma/Ju",wf:"Academia 3"},
-  {name:"VIG\u00cdA",alias:"El Centinela",role:"Monitorea DOF diario buscando reformas que impacten a RyR",id:"k3Ou",t:"cap",cr:"Diario",wf:"Academia 4"},
-  {name:"EXAMEN",alias:"El Profesor",role:"Genera quizzes y califica respuestas automaticamente",id:"6D1H",t:"cap",cr:"Mie",wf:"Academia 5"},
-  {name:"FLASH",alias:"El Veloz",role:"Convierte circulares CRITICA en micro-cursos email express",id:"umGE",t:"cap",cr:"Diario",wf:"Academia 6"},
-  {name:"PULSO",alias:"El Persistente",role:"Persigue a quien no completo su evaluacion",id:"pNT2",t:"cap",cr:"Vie",wf:"Academia 7"},
-  {name:"SELLO",alias:"El Validador",role:"Recibe presentaciones via WA para aprobacion de Victor",id:"0EG6",t:"cap",cr:"WH",wf:"Academia 8"},
-  {name:"JEFA",alias:"La Supervisora",role:"Revisa TODOS los pendientes y escala vencidos sin perdon",id:"4Uhr",t:"ofi",cr:"Diario",wf:"Seguimiento 1"},
-  {name:"DIRECTOR",alias:"El Orquestador",role:"Coordina emails de seguimiento entre todo el equipo",id:"pp5M",t:"ofi",cr:"Diario",wf:"Seguimiento 2"},
-  {name:"CORREO",alias:"El Cartero",role:"Redacta y envia emails HTML con tabla de pendientes",id:"SGkL",t:"ofi",cr:"Diario",wf:"Seguimiento 3"},
-  {name:"RADAR",alias:"El Ojo",role:"Monitorea Gmail cada 2h buscando respuestas pendientes",id:"HPXD",t:"ofi",cr:"2h",wf:"Seguimiento 4"},
-  {name:"AUDITOR",alias:"El Critico",role:"Audita calidad de comunicacion y pone calificaciones",id:"WBaI",t:"ofi",cr:"Diario",wf:"Seguimiento 5"},
-  {name:"CIERRE",alias:"El Puntual",role:"5pm revisa correos sin cerrar y reporta",id:"Tz8g",t:"ofi",cr:"5pm",wf:"Seguimiento 6"},
-  {name:"COBRADOR",alias:"El Banquero",role:"Cobranza escalonada 3-5-7 dias con HTML profesional",id:"33GG",t:"din",cr:"Diario",wf:"Finanzas 1"},
-  {name:"SIRENA",alias:"La Alarma",role:"Alerta riesgo financiero por clientes morosos",id:"ogop",t:"din",cr:"Diario",wf:"Finanzas 2"},
-  {name:"FACTURA",alias:"El Contador",role:"Detecta facturas sin complemento de pago",id:"PrPP",t:"din",cr:"Diario",wf:"Finanzas 3"},
-  {name:"AMANECER",alias:"El Madrugador",role:"7am briefing ejecutivo a Victor por WhatsApp",id:"pgFq",t:"din",cr:"7am",wf:"Reportes 1"},
-  {name:"METRICA",alias:"El Analista",role:"KPIs semanales por persona y area",id:"5Y3f",t:"din",cr:"Sem",wf:"Reportes 2"},
-  {name:"RESUMEN",alias:"El Periodista",role:"Reporte semanal ejecutivo viernes 6pm",id:"SCtS",t:"din",cr:"Vi 6pm",wf:"Reportes 3"},
-  {name:"CENTRAL",alias:"La Operadora",role:"Hub comandos WA: 18 comandos incluyendo /reunion /memoria /alertas",id:"Suvq",t:"com",cr:"WH",wf:"WhatsApp 1"},
-  {name:"ASISTENTE",alias:"El Bot",role:"Atiende clientes WA: cotiza, clasifica, recibe docs",id:"4DVt",t:"com",cr:"WH",wf:"WhatsApp 2"},
-  {name:"NEXUS",alias:"El Cerebro",role:"Claude Sonnet + datos Supabase para preguntas complejas",id:"V1Nf",t:"com",cr:"WH",wf:"WhatsApp 3"},
-  {name:"JUEZ",alias:"El Abogado",role:"Respuestas legales formales a requerimientos",id:"u0dw",t:"com",cr:"Diario",wf:"Legal 1"},
-  {name:"ASPIRADORA",alias:"La Ingesta",role:"Descarga circulares CAAAREM y las mete al vector store",id:"Pz3n",t:"reg",cr:"7am",wf:"RAG 1"},
-  {name:"CAMPANA",alias:"La Alerta",role:"Circular CRITICA detectada = notificacion inmediata",id:"4xoV",t:"reg",cr:"7:30",wf:"RAG 2"},
-  {name:"OR\u00c1CULO",alias:"El Sabio",role:"Consultas circulares via Google Chat con RAG semantico",id:"kimb",t:"reg",cr:"WH",wf:"RAG 3"},
-  {name:"ARA\u00d1A",alias:"La Web",role:"Scrapea CAAAREM diario buscando publicaciones nuevas",id:"M3MI",t:"reg",cr:"Diario",wf:"RAG 4"},
-  {name:"CRISTAL",alias:"El Vector",role:"Embeddings para busqueda semantica en 17k+ fragmentos",id:"OyGi",t:"reg",cr:"Diario",wf:"RAG 5"},
-  {name:"ANCLA",alias:"El Maritimo",role:"Rastrea cargas Pochteca y alerta retrasos 5+ dias",id:"cPtq",t:"reg",cr:"Diario",wf:"Pochteca 1"},
-  {name:"LENTE",alias:"El Hawk-Eye",role:"Glosa documental: discrepancias factura-pedimento",id:"4IAE",t:"des",cr:"Gmail",wf:"Op 1"},
-  {name:"ESC\u00c1NER",alias:"El OCR",role:"OCR inteligente extrae datos de documentos escaneados",id:"E8IP",t:"des",cr:"Gmail",wf:"Op 2"},
-  {name:"FILTRO",alias:"El Router",role:"Clasifica documentos aduaneros por tipo y prioridad",id:"6GND",t:"des",cr:"WH",wf:"Op 3"},
-  {name:"BALANZA",alias:"El Justo",role:"Cruza factura vs pedimento campo por campo",id:"QuaV",t:"des",cr:"WH",wf:"Op 4"},
-  {name:"ESCUDO",alias:"El Guardian",role:"Verifica clientes diario contra listas SAT 69-B",id:"PjxC",t:"des",cr:"Diario",wf:"Op 5"},
-  {name:"CENTINELA",alias:"El Multas",role:"Busca errores en pedimentos que generen multas SAT",id:"EsJa",t:"des",cr:"Diario",wf:"Op 6"},
-  {name:"SELLO-Q",alias:"El ISO",role:"Monitorea vencimientos ISO 9001 y OEA",id:"Fh1e",t:"des",cr:"Diario",wf:"Op 7"},
-  {name:"PERFIL",alias:"El KYC",role:"Due diligence y validacion de identidad clientes",id:"VnaL",t:"des",cr:"WH",wf:"Op 8"},
-  {name:"INTEGRAL",alias:"El Univar",role:"Correos Univar: clasifica, archiva y responde",id:"k6Nf",t:"cli",cr:"Gmail",wf:"Univar 1"},
-  {name:"CARGA",alias:"El Trucker",role:"Operaciones base Univar: pedimentos, pagos, navieras",id:"F8hD",t:"cli",cr:"Gmail",wf:"Univar 2"},
-  {name:"COTIZA",alias:"El Rapido",role:"Cotizaciones PDF desde solicitudes por email",id:"1jBz",t:"cli",cr:"Gmail",wf:"Cotiz 1"},
-  {name:"CHAT-Q",alias:"El Asesor",role:"Cotizaciones interactivas por chat tiempo real",id:"UTnR",t:"cli",cr:"WH",wf:"Cotiz 2"},
-  {name:"ARCHIVO",alias:"El Organizado",role:"Expedientes electronicos 1.4.14 via chat",id:"Qz05",t:"cli",cr:"WH",wf:"Util 1"},
-  {name:"PALMA",alias:"El Relajado",role:"Solicitudes de vacaciones y dias libres",id:"fPVx",t:"cli",cr:"WH",wf:"Util 2"},
-  {name:"FANTASMA",alias:"El Legacy",role:"Workflow heredado pendiente de desactivar",id:"LhQW",t:"cli",cr:"\u2014",wf:"Util 3"},
-  {name:"BRAINSTORM",alias:"El Pensador",role:"Brainstorm diario 7pm con analisis cruzado de agentes y memoria",id:"PdiZ",t:"cli",cr:"7pm",wf:"Util 4"},
-  {name:"CONVOCADOR",alias:"El Moderador",role:"Reuniones on-demand por tema via /reunion en WhatsApp",id:"E0HL",t:"cli",cr:"WH",wf:"Util 5"},
-  {name:"DOCTOR",alias:"El Diagnostico",role:"Escanea TODOS los workflows buscando bugs, nodos rotos y configs invalidas",id:"t8EV",t:"sal",cr:"6am",wf:"Salud 1"},
-  {name:"CIRUJANO",alias:"El Reparador",role:"Aplica auto-fixes seguros y escala lo riesgoso a Victor",id:"sFIw",t:"sal",cr:"6:15am",wf:"Salud 2"},
-  {name:"ENFERMERA",alias:"La Vigilante",role:"Monitorea fallos cada 2h y auto-desactiva workflows con 5+ errores",id:"jhVG",t:"sal",cr:"2h",wf:"Salud 3"},
+const TRIG_TYPES = {
+  diario:  { label:"Diario",  match:/diario|7am|7:30|6am|6:15am|5pm|7pm|^\d+(am|pm)|^\d+:\d+/i },
+  semanal: { label:"Semanal", match:/sem|vi\s*6pm|vie|mie|ma\/ju|l\s*7am/i },
+  nhoras:  { label:"Cada Xh", match:/^\d+h$/i },
+  webhook: { label:"Webhook", match:/^(wh|gmail|whatsapp)$/i },
+  manual:  { label:"Manual",  match:/—|manual|legacy/i },
+};
+
+// 57 agents = 49 known from v2 + 8 new RH
+const A = [
+  { name:"LUPA",       alias:"La Detective",   role:"Escanea errores del equipo y detecta gaps de conocimiento", id:"8KE3", t:"cap", cr:"L 7am",  wf:"Academia 1" },
+  { name:"DARWIN",     alias:"El Investigador",role:"Investiga regulaciones DOF/SAT y genera briefs de capacitacion", id:"jhlq", t:"cap", cr:"Ma/Ju", wf:"Academia 2" },
+  { name:"CANVAS",     alias:"El Artista",     role:"Genera presentaciones Canva autonomas desde briefs", id:"mqzt", t:"cap", cr:"Ma/Ju", wf:"Academia 3" },
+  { name:"VIGÍA", alias:"El Centinela",   role:"Monitorea DOF diario buscando reformas que impacten a RyR", id:"k3Ou", t:"cap", cr:"Diario", wf:"Academia 4" },
+  { name:"EXAMEN",     alias:"El Profesor",    role:"Genera quizzes y califica respuestas automaticamente", id:"6D1H", t:"cap", cr:"Mie", wf:"Academia 5" },
+  { name:"FLASH",      alias:"El Veloz",       role:"Convierte circulares CRITICA en micro-cursos email express", id:"umGE", t:"cap", cr:"Diario", wf:"Academia 6" },
+  { name:"PULSO",      alias:"El Persistente", role:"Persigue a quien no completo su evaluacion", id:"pNT2", t:"cap", cr:"Vie", wf:"Academia 7" },
+  { name:"SELLO",      alias:"El Validador",   role:"Recibe presentaciones via WA para aprobacion de Victor", id:"0EG6", t:"cap", cr:"WH", wf:"Academia 8" },
+  { name:"JEFA",       alias:"La Supervisora", role:"Revisa TODOS los pendientes y escala vencidos sin perdon", id:"4Uhr", t:"ofi", cr:"Diario", wf:"Seguimiento 1" },
+  { name:"DIRECTOR",   alias:"El Orquestador", role:"Coordina emails de seguimiento entre todo el equipo", id:"pp5M", t:"ofi", cr:"Diario", wf:"Seguimiento 2" },
+  { name:"CORREO",     alias:"El Cartero",     role:"Redacta y envia emails HTML con tabla de pendientes", id:"SGkL", t:"ofi", cr:"Diario", wf:"Seguimiento 3" },
+  { name:"RADAR",      alias:"El Ojo",         role:"Monitorea Gmail cada 2h buscando respuestas pendientes", id:"HPXD", t:"ofi", cr:"2h", wf:"Seguimiento 4" },
+  { name:"AUDITOR",    alias:"El Critico",     role:"Audita calidad de comunicacion y pone calificaciones", id:"WBaI", t:"ofi", cr:"Diario", wf:"Seguimiento 5" },
+  { name:"CIERRE",     alias:"El Puntual",     role:"5pm revisa correos sin cerrar y reporta", id:"Tz8g", t:"ofi", cr:"5pm", wf:"Seguimiento 6" },
+  { name:"COBRADOR",   alias:"El Banquero",    role:"Cobranza escalonada 3-5-7 dias con HTML profesional", id:"33GG", t:"din", cr:"Diario", wf:"Finanzas 1" },
+  { name:"SIRENA",     alias:"La Alarma",      role:"Alerta riesgo financiero por clientes morosos", id:"ogop", t:"din", cr:"Diario", wf:"Finanzas 2" },
+  { name:"FACTURA",    alias:"El Contador",    role:"Detecta facturas sin complemento de pago", id:"PrPP", t:"din", cr:"Diario", wf:"Finanzas 3" },
+  { name:"AMANECER",   alias:"El Madrugador",  role:"7am briefing ejecutivo a Victor por WhatsApp", id:"pgFq", t:"din", cr:"7am", wf:"Reportes 1" },
+  { name:"METRICA",    alias:"El Analista",    role:"KPIs semanales por persona y area", id:"5Y3f", t:"din", cr:"Sem", wf:"Reportes 2" },
+  { name:"RESUMEN",    alias:"El Periodista",  role:"Reporte semanal ejecutivo viernes 6pm", id:"SCtS", t:"din", cr:"Vi 6pm", wf:"Reportes 3" },
+  { name:"CENTRAL",    alias:"La Operadora",   role:"Hub comandos WA: 18 comandos incluyendo /reunion /memoria /alertas", id:"Suvq", t:"com", cr:"WH", wf:"WhatsApp 1" },
+  { name:"ASISTENTE",  alias:"El Bot",         role:"Atiende clientes WA: cotiza, clasifica, recibe docs", id:"4DVt", t:"com", cr:"WH", wf:"WhatsApp 2" },
+  { name:"NEXUS",      alias:"El Cerebro",     role:"Claude Sonnet + datos Supabase para preguntas complejas", id:"V1Nf", t:"com", cr:"WH", wf:"WhatsApp 3" },
+  { name:"JUEZ",       alias:"El Abogado",     role:"Respuestas legales formales a requerimientos", id:"u0dw", t:"com", cr:"Diario", wf:"Legal 1" },
+  { name:"ASPIRADORA", alias:"La Ingesta",     role:"Descarga circulares CAAAREM y las mete al vector store", id:"Pz3n", t:"reg", cr:"7am", wf:"RAG 1" },
+  { name:"CAMPANA",    alias:"La Alerta",      role:"Circular CRITICA detectada = notificacion inmediata", id:"4xoV", t:"reg", cr:"7:30", wf:"RAG 2" },
+  { name:"ORÁCULO", alias:"El Sabio",     role:"Consultas circulares via Google Chat con RAG semantico", id:"kimb", t:"reg", cr:"WH", wf:"RAG 3" },
+  { name:"ARAÑA", alias:"La Web",         role:"Scrapea CAAAREM diario buscando publicaciones nuevas", id:"M3MI", t:"reg", cr:"Diario", wf:"RAG 4" },
+  { name:"CRISTAL",    alias:"El Vector",      role:"Embeddings para busqueda semantica en 17k+ fragmentos", id:"OyGi", t:"reg", cr:"Diario", wf:"RAG 5" },
+  { name:"ANCLA",      alias:"El Maritimo",    role:"Rastrea cargas Pochteca y alerta retrasos 5+ dias", id:"cPtq", t:"reg", cr:"Diario", wf:"Pochteca 1" },
+  { name:"LENTE",      alias:"El Hawk-Eye",    role:"Glosa documental: discrepancias factura-pedimento", id:"4IAE", t:"des", cr:"Gmail", wf:"Op 1" },
+  { name:"ESCÁNER", alias:"El OCR",       role:"OCR inteligente extrae datos de documentos escaneados", id:"E8IP", t:"des", cr:"Gmail", wf:"Op 2" },
+  { name:"FILTRO",     alias:"El Router",      role:"Clasifica documentos aduaneros por tipo y prioridad", id:"6GND", t:"des", cr:"WH", wf:"Op 3" },
+  { name:"BALANZA",    alias:"El Justo",       role:"Cruza factura vs pedimento campo por campo", id:"QuaV", t:"des", cr:"WH", wf:"Op 4" },
+  { name:"ESCUDO",     alias:"El Guardian",    role:"Verifica clientes diario contra listas SAT 69-B", id:"PjxC", t:"des", cr:"Diario", wf:"Op 5" },
+  { name:"CENTINELA",  alias:"El Multas",      role:"Busca errores en pedimentos que generen multas SAT", id:"EsJa", t:"des", cr:"Diario", wf:"Op 6" },
+  { name:"SELLO-Q",    alias:"El ISO",         role:"Monitorea vencimientos ISO 9001 y OEA", id:"Fh1e", t:"des", cr:"Diario", wf:"Op 7" },
+  { name:"PERFIL",     alias:"El KYC",         role:"Due diligence y validacion de identidad clientes", id:"VnaL", t:"des", cr:"WH", wf:"Op 8" },
+  { name:"INTEGRAL",   alias:"El Univar",      role:"Correos Univar: clasifica, archiva y responde", id:"k6Nf", t:"cli", cr:"Gmail", wf:"Univar 1" },
+  { name:"CARGA",      alias:"El Trucker",     role:"Operaciones base Univar: pedimentos, pagos, navieras", id:"F8hD", t:"cli", cr:"Gmail", wf:"Univar 2" },
+  { name:"COTIZA",     alias:"El Rapido",      role:"Cotizaciones PDF desde solicitudes por email", id:"1jBz", t:"cli", cr:"Gmail", wf:"Cotiz 1" },
+  { name:"CHAT-Q",     alias:"El Asesor",      role:"Cotizaciones interactivas por chat tiempo real", id:"UTnR", t:"cli", cr:"WH", wf:"Cotiz 2" },
+  { name:"ARCHIVO",    alias:"El Organizado",  role:"Expedientes electronicos 1.4.14 via chat", id:"Qz05", t:"cli", cr:"WH", wf:"Util 1" },
+  { name:"PALMA",      alias:"El Relajado",    role:"Solicitudes de vacaciones y dias libres", id:"fPVx", t:"cli", cr:"WH", wf:"Util 2" },
+  { name:"FANTASMA",   alias:"El Legacy",      role:"Workflow heredado pendiente de desactivar", id:"LhQW", t:"cli", cr:"—", wf:"Util 3" },
+  { name:"BRAINSTORM", alias:"El Pensador",    role:"Brainstorm diario 7pm con analisis cruzado de agentes y memoria", id:"PdiZ", t:"cli", cr:"7pm", wf:"Util 4" },
+  { name:"CONVOCADOR", alias:"El Moderador",   role:"Reuniones on-demand por tema via /reunion en WhatsApp", id:"E0HL", t:"cli", cr:"WH", wf:"Util 5" },
+  { name:"DOCTOR",     alias:"El Diagnostico", role:"Escanea TODOS los workflows buscando bugs, nodos rotos y configs invalidas", id:"t8EV", t:"sal", cr:"6am", wf:"Salud 1" },
+  { name:"CIRUJANO",   alias:"El Reparador",   role:"Aplica auto-fixes seguros y escala lo riesgoso a Victor", id:"sFIw", t:"sal", cr:"6:15am", wf:"Salud 2" },
+  { name:"ENFERMERA",  alias:"La Vigilante",   role:"Monitorea fallos cada 2h y auto-desactiva workflows con 5+ errores", id:"jhVG", t:"sal", cr:"2h", wf:"Salud 3" },
+  { name:"TALENTO",    alias:"El Cazador",     role:"Monitorea postulaciones entrantes y filtra CVs segun perfil", id:"rh01", t:"rh", cr:"Gmail", wf:"RH 1" },
+  { name:"ONBOARD",    alias:"El Anfitrion",   role:"Envia kit de bienvenida y checklist primer dia a nuevos ingresos", id:"rh02", t:"rh", cr:"WH", wf:"RH 2" },
+  { name:"NOMINA",     alias:"El Pagador",     role:"Prepara resumen quincenal de nomina y alerta discrepancias", id:"rh03", t:"rh", cr:"Sem", wf:"RH 3" },
+  { name:"CAPILLA",    alias:"El Animo",       role:"Pulso semanal de clima laboral via encuesta corta WA", id:"rh04", t:"rh", cr:"Vie", wf:"RH 4" },
+  { name:"CUMPLE",     alias:"El Fiestero",    role:"Detecta cumpleanos y aniversarios, envia felicitacion grupal", id:"rh05", t:"rh", cr:"Diario", wf:"RH 5" },
+  { name:"AUSENCIAS",  alias:"El Contador-RH", role:"Monitorea checadas y genera reporte diario de inasistencias", id:"rh06", t:"rh", cr:"Diario", wf:"RH 6" },
+  { name:"DESARROLLO", alias:"El Mentor",      role:"Seguimiento de planes de carrera y evaluaciones trimestrales", id:"rh07", t:"rh", cr:"Sem", wf:"RH 7" },
+  { name:"BIENESTAR",  alias:"El Coach",       role:"Recordatorios de revision medica, vacaciones no tomadas y burnout", id:"rh08", t:"rh", cr:"Sem", wf:"RH 8" },
 ];
 
-const Fc=(t,c,s=80)=>{const cx=s/2,cy=s/2,r=s*.4,ey=cy-s*.04,lx=cx-s*.14,rx=cx+s*.14,R=s*.09,pR=R*.55;const eyes=`<ellipse cx="${lx}" cy="${ey}" rx="${R}" ry="${R*1.15}" fill="#fff"/><ellipse cx="${rx}" cy="${ey}" rx="${R}" ry="${R*1.15}" fill="#fff"/><circle cx="${lx+1.5}" cy="${ey+1}" r="${pR}" fill="#0f0f1a"/><circle cx="${rx+1.5}" cy="${ey+1}" r="${pR}" fill="#0f0f1a"/><circle cx="${lx+2}" cy="${ey-.5}" r="${pR*.3}" fill="#fff"/><circle cx="${rx+2}" cy="${ey-.5}" r="${pR*.3}" fill="#fff"/>`;const sm=`<path d="M${cx-s*.09} ${cy+s*.14}Q${cx} ${cy+s*.21} ${cx+s*.09} ${cy+s*.14}" stroke="#fff" fill="none" stroke-width="${s*.028}" stroke-linecap="round"/>`;const fl=`<line x1="${cx-s*.07}" y1="${cy+s*.15}" x2="${cx+s*.07}" y2="${cy+s*.15}" stroke="#fff" stroke-width="${s*.028}" stroke-linecap="round"/>`;const hd=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${c}"/>`;const P={detective:hd+eyes+sm,boss:hd+eyes+sm+`<rect x="${cx-s*.25}" y="${cy-s*.39}" width="${s*.5}" height="${s*.11}" rx="${s*.035}" fill="#FDE68A"/>`,brain:hd+eyes+sm+`<circle cx="${cx}" cy="${cy-s*.33}" r="${s*.07}" fill="none" stroke="#FDE68A" stroke-width="${s*.02}"/><circle cx="${cx}" cy="${cy-s*.33}" r="${s*.025}" fill="#FDE68A"><animate attributeName="opacity" values=".4;1;.4" dur="2s" repeatCount="indefinite"/></circle>`,shield:hd+eyes+fl+`<path d="M${cx} ${cy-s*.42}L${cx-s*.17} ${cy-s*.3}v${s*.12}c0 ${s*.09} ${s*.17} ${s*.17} ${s*.17} ${s*.17}s${s*.17}-${s*.08} ${s*.17}-${s*.17}v-${s*.12}z" fill="none" stroke="#22C55E" stroke-width="${s*.018}" opacity=".4"/>`,scanner:hd+eyes+fl+`<line x1="${cx-s*.2}" y1="${cy+s*.06}" x2="${cx+s*.2}" y2="${cy+s*.06}" stroke="#EF4444" stroke-width="${s*.018}" opacity=".5"><animate attributeName="y1" values="${cy-s*.02};${cy+s*.14};${cy-s*.02}" dur="2s" repeatCount="indefinite"/><animate attributeName="y2" values="${cy-s*.02};${cy+s*.14};${cy-s*.02}" dur="2s" repeatCount="indefinite"/></line>`,stethoscope:hd+eyes+sm+`<circle cx="${cx}" cy="${cy+s*.28}" r="${s*.06}" fill="none" stroke="#F43F5E" stroke-width="${s*.025}"/><path d="M${cx-s*.06} ${cy+s*.22}Q${cx-s*.15} ${cy-s*.1} ${cx-s*.05} ${cy-s*.2}" stroke="#F43F5E" fill="none" stroke-width="${s*.02}"/>`,scalpel:hd+eyes+fl+`<line x1="${cx+s*.15}" y1="${cy-s*.35}" x2="${cx+s*.28}" y2="${cy-s*.15}" stroke="#F43F5E" stroke-width="${s*.03}" stroke-linecap="round"/><circle cx="${cx+s*.28}" cy="${cy-s*.15}" r="${s*.03}" fill="#F43F5E"/>`,nurse:hd+eyes+sm+`<rect x="${cx-s*.12}" y="${cy-s*.42}" width="${s*.24}" height="${s*.09}" rx="${s*.02}" fill="#F43F5E"/><line x1="${cx}" y1="${cy-s*.44}" x2="${cx}" y2="${cy-s*.31}" stroke="#fff" stroke-width="${s*.02}"/><line x1="${cx-s*.06}" y1="${cy-s*.375}" x2="${cx+s*.06}" y2="${cy-s*.375}" stroke="#fff" stroke-width="${s*.02}"/>`,ghost:`<circle cx="${cx}" cy="${cy}" r="${r}" fill="#27272a"/><ellipse cx="${lx}" cy="${ey}" rx="${R*.9}" ry="${R}" fill="#444"/><ellipse cx="${rx}" cy="${ey}" rx="${R*.9}" ry="${R}" fill="#444"/>`};return P[t]||hd+eyes+sm};
+// --- SVG FACE (pure JSX — no dangerouslySetInnerHTML) ---
+const FaceBase = ({ color, s=80, children, headColor }) => {
+  const cx = s/2, cy = s/2, r = s*.4, ey = cy - s*.04;
+  const lx = cx - s*.14, rx = cx + s*.14;
+  const R = s*.09, pR = R*.55;
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={r} fill={headColor || color}/>
+      <ellipse cx={lx} cy={ey} rx={R} ry={R*1.15} fill="#fff"/>
+      <ellipse cx={rx} cy={ey} rx={R} ry={R*1.15} fill="#fff"/>
+      <circle cx={lx+1.5} cy={ey+1} r={pR} fill="#0f0f1a"/>
+      <circle cx={rx+1.5} cy={ey+1} r={pR} fill="#0f0f1a"/>
+      <circle cx={lx+2} cy={ey-.5} r={pR*.3} fill="#fff"/>
+      <circle cx={rx+2} cy={ey-.5} r={pR*.3} fill="#fff"/>
+      {children}
+    </g>
+  );
+};
 
-const faceMap={
+const Mouth = ({ type, s=80 }) => {
+  const cx = s/2, cy = s/2;
+  if (type === "flat") return <line x1={cx-s*.07} y1={cy+s*.15} x2={cx+s*.07} y2={cy+s*.15} stroke="#fff" strokeWidth={s*.028} strokeLinecap="round"/>;
+  return <path d={`M${cx-s*.09} ${cy+s*.14}Q${cx} ${cy+s*.21} ${cx+s*.09} ${cy+s*.14}`} stroke="#fff" fill="none" strokeWidth={s*.028} strokeLinecap="round"/>;
+};
+
+const FACES = {
+  detective: ({ color, s }) => <FaceBase color={color} s={s}><Mouth type="smile" s={s}/></FaceBase>,
+  boss: ({ color, s }) => {
+    const cx = s/2, cy = s/2;
+    return <FaceBase color={color} s={s}><Mouth type="smile" s={s}/><rect x={cx-s*.25} y={cy-s*.39} width={s*.5} height={s*.11} rx={s*.035} fill="#FDE68A"/></FaceBase>;
+  },
+  brain: ({ color, s }) => {
+    const cx = s/2, cy = s/2;
+    return <FaceBase color={color} s={s}>
+      <Mouth type="smile" s={s}/>
+      <circle cx={cx} cy={cy-s*.33} r={s*.07} fill="none" stroke="#FDE68A" strokeWidth={s*.02}/>
+      <circle cx={cx} cy={cy-s*.33} r={s*.025} fill="#FDE68A">
+        <animate attributeName="opacity" values=".4;1;.4" dur="2s" repeatCount="indefinite"/>
+      </circle>
+    </FaceBase>;
+  },
+  shield: ({ color, s }) => {
+    const cx = s/2, cy = s/2;
+    return <FaceBase color={color} s={s}>
+      <Mouth type="flat" s={s}/>
+      <path d={`M${cx} ${cy-s*.42}L${cx-s*.17} ${cy-s*.3}v${s*.12}c0 ${s*.09} ${s*.17} ${s*.17} ${s*.17} ${s*.17}s${s*.17}-${s*.08} ${s*.17}-${s*.17}v-${s*.12}z`} fill="none" stroke="#22C55E" strokeWidth={s*.018} opacity=".4"/>
+    </FaceBase>;
+  },
+  scanner: ({ color, s }) => {
+    const cx = s/2, cy = s/2;
+    return <FaceBase color={color} s={s}>
+      <Mouth type="flat" s={s}/>
+      <line x1={cx-s*.2} y1={cy+s*.06} x2={cx+s*.2} y2={cy+s*.06} stroke="#EF4444" strokeWidth={s*.018} opacity=".5">
+        <animate attributeName="y1" values={`${cy-s*.02};${cy+s*.14};${cy-s*.02}`} dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="y2" values={`${cy-s*.02};${cy+s*.14};${cy-s*.02}`} dur="2s" repeatCount="indefinite"/>
+      </line>
+    </FaceBase>;
+  },
+  stethoscope: ({ color, s }) => {
+    const cx = s/2, cy = s/2;
+    return <FaceBase color={color} s={s}>
+      <Mouth type="smile" s={s}/>
+      <circle cx={cx} cy={cy+s*.28} r={s*.06} fill="none" stroke="#F43F5E" strokeWidth={s*.025}/>
+      <path d={`M${cx-s*.06} ${cy+s*.22}Q${cx-s*.15} ${cy-s*.1} ${cx-s*.05} ${cy-s*.2}`} stroke="#F43F5E" fill="none" strokeWidth={s*.02}/>
+    </FaceBase>;
+  },
+  scalpel: ({ color, s }) => {
+    const cx = s/2, cy = s/2;
+    return <FaceBase color={color} s={s}>
+      <Mouth type="flat" s={s}/>
+      <line x1={cx+s*.15} y1={cy-s*.35} x2={cx+s*.28} y2={cy-s*.15} stroke="#F43F5E" strokeWidth={s*.03} strokeLinecap="round"/>
+      <circle cx={cx+s*.28} cy={cy-s*.15} r={s*.03} fill="#F43F5E"/>
+    </FaceBase>;
+  },
+  nurse: ({ color, s }) => {
+    const cx = s/2, cy = s/2;
+    return <FaceBase color={color} s={s}>
+      <Mouth type="smile" s={s}/>
+      <rect x={cx-s*.12} y={cy-s*.42} width={s*.24} height={s*.09} rx={s*.02} fill="#F43F5E"/>
+      <line x1={cx} y1={cy-s*.44} x2={cx} y2={cy-s*.31} stroke="#fff" strokeWidth={s*.02}/>
+      <line x1={cx-s*.06} y1={cy-s*.375} x2={cx+s*.06} y2={cy-s*.375} stroke="#fff" strokeWidth={s*.02}/>
+    </FaceBase>;
+  },
+  ghost: ({ s }) => {
+    const cx = s/2, cy = s/2, r = s*.4;
+    const lx = cx - s*.14, rx = cx + s*.14, ey = cy - s*.04, R = s*.09;
+    return <g>
+      <circle cx={cx} cy={cy} r={r} fill="#27272a"/>
+      <ellipse cx={lx} cy={ey} rx={R*.9} ry={R} fill="#444"/>
+      <ellipse cx={rx} cy={ey} rx={R*.9} ry={R} fill="#444"/>
+    </g>;
+  },
+  heart: ({ color, s }) => {
+    const cx = s/2, cy = s/2;
+    return <FaceBase color={color} s={s}>
+      <Mouth type="smile" s={s}/>
+      <path d={`M${cx} ${cy+s*.33}l-${s*.05} -${s*.04}c-${s*.06} -${s*.05} -${s*.1} -${s*.03} -${s*.1} ${s*.02}c0 ${s*.04} ${s*.05} ${s*.07} ${s*.1} ${s*.11}c${s*.05}-${s*.04} ${s*.1}-${s*.07} ${s*.1}-${s*.11}c0-${s*.05} -${s*.04}-${s*.07} -${s*.1}-${s*.02}z`} fill="#F472B6"/>
+    </FaceBase>;
+  },
+};
+
+const faceMap = {
   "Academia 1":"detective","Academia 2":"detective","Academia 3":"detective","Academia 4":"detective",
   "Academia 5":"detective","Academia 6":"detective","Academia 7":"detective","Academia 8":"detective",
   "Seguimiento 1":"boss","Seguimiento 2":"detective","Seguimiento 3":"detective","Seguimiento 4":"detective",
@@ -97,109 +252,1153 @@ const faceMap={
   "Op 5":"shield","Op 6":"detective","Op 7":"detective","Op 8":"detective",
   "Univar 1":"detective","Univar 2":"detective","Cotiz 1":"detective","Cotiz 2":"detective",
   "Util 1":"detective","Util 2":"detective","Util 3":"ghost","Util 4":"brain","Util 5":"brain",
-  "Salud 1":"stethoscope","Salud 2":"scalpel","Salud 3":"nurse"
+  "Salud 1":"stethoscope","Salud 2":"scalpel","Salud 3":"nurse",
+  "RH 1":"detective","RH 2":"heart","RH 3":"detective","RH 4":"heart",
+  "RH 5":"heart","RH 6":"detective","RH 7":"brain","RH 8":"heart",
 };
 
-const Av=({a,sz=46,on})=>{const c=T[a.t]?.c||"#666";const face=faceMap[a.wf]||"detective";return(<div style={{position:"relative",width:sz,height:sz,flexShrink:0}}>{on&&<div style={{position:"absolute",inset:-4,borderRadius:"50%",background:c,opacity:.12,animation:"glow 3s ease-in-out infinite"}}/>}<svg viewBox="0 0 80 80" width={sz} height={sz}><g dangerouslySetInnerHTML={{__html:Fc(face,c,80)}}/></svg></div>)};
+// --- STATUS ---
+const STATUS = {
+  OK:         { label:"OK",          icon:"✅", color:"#22C55E" },
+  IDLE:       { label:"IDLE",        icon:"💤", color:"#71717a" },
+  WARNING:    { label:"WARNING",     icon:"⚠️", color:"#FBBF24" },
+  ERROR:      { label:"ERROR",       icon:"❌", color:"#EF4444" },
+  FIXPENDING: { label:"FIX-PENDING", icon:"🔧", color:"#FB923C" },
+};
 
-const tA=d=>{if(!d)return"";const s=Math.floor((Date.now()-new Date(d).getTime())/1000);if(s<60)return s+"s";if(s<3600)return Math.floor(s/60)+"m";if(s<86400)return Math.floor(s/3600)+"h";return Math.floor(s/86400)+"d"};
+const FIX_PENDING_IDS = new Set(["LhQW"]);
 
-const SD=({s})=><span style={{width:7,height:7,borderRadius:"50%",display:"inline-block",flexShrink:0,background:s==="success"?"#22C55E":s==="error"?"#EF4444":s==="online"?"#22C55E":"#27272a",boxShadow:s==="success"||s==="online"?"0 0 6px rgba(34,197,94,.4)":s==="error"?"0 0 6px rgba(239,68,68,.4)":"none"}}/>;
+const classifyTriggerType = (cr) => {
+  if (!cr) return "manual";
+  for (const [k,v] of Object.entries(TRIG_TYPES)) if (v.match.test(cr)) return k;
+  return "manual";
+};
 
-const MissionControlApp = function MissionControl(){
-  const[logs,setLogs]=useState([]);const[meetings,setMeetings]=useState([]);const[memories,setMemories]=useState([]);const[alerts,setAlerts]=useState([]);const[health,setHealth]=useState([]);
-  const[filter,setFilter]=useState("all");const[view,setView]=useState("grid");const[sel,setSel]=useState(null);const[ld,setLd]=useState(true);const[lr,setLr]=useState(null);
+const expectsDaily = (cr) => /diario|7am|7:30|6am|6:15am|5pm|7pm|^\d+(am|pm)|^\d+:\d+|mie|vie|ma\/ju|vi\s*6pm|sem|l\s*7am/i.test(cr || "");
 
-  const f2=useCallback(async()=>{
-    try{const[a,b,c,d,e]=await Promise.all([
-      fetch(`${SB}/aria_agent_log?order=created_at.desc&limit=500`,{headers:HD}).then(r=>r.json()).catch(()=>[]),
-      fetch(`${SB}/aria_agent_meetings?order=created_at.desc&limit=20`,{headers:HD}).then(r=>r.json()).catch(()=>[]),
-      fetch(`${SB}/aria_memory?is_active=eq.true&order=relevance_score.desc&limit=20`,{headers:HD}).then(r=>r.json()).catch(()=>[]),
-      fetch(`${SB}/aria_proactive_alerts?status=eq.pending&order=created_at.desc&limit=10`,{headers:HD}).then(r=>r.json()).catch(()=>[]),
-      fetch(`${SB}/aria_health_checks?status=eq.open&order=created_at.desc&limit=15`,{headers:HD}).then(r=>r.json()).catch(()=>[]),
-    ]);if(Array.isArray(a))setLogs(a);if(Array.isArray(b))setMeetings(b);if(Array.isArray(c))setMemories(c);if(Array.isArray(d))setAlerts(d);if(Array.isArray(e))setHealth(e);}catch(e){}
-    setLd(false);setLr(new Date());
-  },[]);
-  useEffect(()=>{f2();const i=setInterval(f2,20000);return()=>clearInterval(i)},[f2]);
+const hoursAgo = (iso) => iso ? (Date.now() - new Date(iso).getTime()) / 3600000 : Infinity;
 
-  const st={},al={};
-  logs.forEach(l=>{const k=l.agent_name;if(!st[k])st[k]={last:l,n:0,ok:0,er:0,it:0};if(!al[k])al[k]=[];st[k].n++;if(l.status==="success")st[k].ok++;if(l.status==="error")st[k].er++;st[k].it+=l.items_processed||0;if(al[k].length<3)al[k].push(l)});
+const computeStatus = (agent, s) => {
+  if (FIX_PENDING_IDS.has(agent.id)) return "FIXPENDING";
+  if (!s || !s.last24) {
+    if (expectsDaily(agent.cr)) return "WARNING";
+    return "IDLE";
+  }
+  if (s.err24 > 0) return "ERROR";
+  if (s.ok24 > 0) return "OK";
+  if (expectsDaily(agent.cr)) return "WARNING";
+  return "IDLE";
+};
 
-  const teams=Object.keys(T);const ft=filter==="all"?teams:[filter];
-  const totalAgents=Object.keys(st).length;const totalRuns=logs.length;const totalErrors=logs.filter(l=>l.status==="error").length;
+const tA = (d) => {
+  if (!d) return "";
+  const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+  if (s < 60) return s+"s";
+  if (s < 3600) return Math.floor(s/60)+"m";
+  if (s < 86400) return Math.floor(s/3600)+"h";
+  return Math.floor(s/86400)+"d";
+};
 
-  return(
-    <div style={{background:"#06060a",color:"#d4d4d8",minHeight:"100vh",fontFamily:"'JetBrains Mono','Fira Code',monospace"}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');@keyframes glow{0%,100%{transform:scale(1);opacity:.1}50%{transform:scale(1.3);opacity:.2}}@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}@keyframes ticker{0%{transform:translateX(100%)}100%{transform:translateX(-200%)}}.cd{background:#0d0d12;border:1px solid #1a1a24;border-radius:12px;padding:14px;cursor:pointer;transition:all .3s;position:relative;overflow:hidden}.cd:hover{border-color:#2a2a3a;transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.5)}.cd.on{border-color:var(--tc);box-shadow:0 0 20px var(--tc-glow)}.cd::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--tc),transparent);opacity:.3}.rm{border-radius:16px;padding:16px;margin-bottom:20px;border:1px solid #1a1a24;position:relative;overflow:hidden}.rm::after{content:'';position:absolute;top:0;right:0;width:120px;height:120px;background:radial-gradient(circle,var(--tc-glow) 0%,transparent 70%);opacity:.04;pointer-events:none}.tk{overflow:hidden;white-space:nowrap;background:#0a0a10;border-top:1px solid #1a1a24;border-bottom:1px solid #1a1a24;padding:6px 0;font-size:11px}.tk span{display:inline-block;animation:ticker 60s linear infinite}`}</style>
+// --- COMPONENTS ---
+const Av = ({ a, sz=46, pulse=false }) => {
+  const c = T[a.t]?.c || "#666";
+  const faceName = faceMap[a.wf] || "detective";
+  const Face = FACES[faceName] || FACES.detective;
+  return (
+    <div style={{ position:"relative", width:sz, height:sz, flexShrink:0 }}>
+      {pulse && <div style={{ position:"absolute", inset:-4, borderRadius:"50%", background:c, opacity:.12, animation:"glow 3s ease-in-out infinite" }}/>}
+      <svg viewBox="0 0 80 80" width={sz} height={sz}>
+        <Face color={c} s={80}/>
+      </svg>
+    </div>
+  );
+};
 
-      {/* TOP BAR */}
-      <div style={{padding:"16px 24px",display:"flex",alignItems:"center",gap:14,borderBottom:"1px solid #1a1a24"}}>
-        <div style={{width:38,height:38,borderRadius:10,background:"linear-gradient(135deg,#1A5C3A,#0a1f12)",display:"flex",alignItems:"center",justifyContent:"center",border:"1px solid #1A5C3A40"}}><span style={{color:"#D4A843",fontSize:18,fontWeight:700}}>A</span></div>
-        <div style={{flex:1}}>
-          <div style={{fontSize:16,fontWeight:600,letterSpacing:1,textTransform:"uppercase",color:"#e4e4e7"}}>ARIA Mission Control</div>
-          <div style={{fontSize:10,color:"#52525b"}}>{totalAgents}/50 agents \u2022 {totalRuns} runs \u2022 {memories.length} memories \u2022 {alerts.length} alerts{lr&&<span> \u2014 {lr.toLocaleTimeString()}</span>}</div>
+const SD = ({ s }) => (
+  <span style={{
+    width:7, height:7, borderRadius:"50%", display:"inline-block", flexShrink:0,
+    background: s==="success"||s==="online" ? "#22C55E" : s==="error" ? "#EF4444" : "#27272a",
+    boxShadow: s==="success"||s==="online" ? "0 0 6px rgba(34,197,94,.4)" : s==="error" ? "0 0 6px rgba(239,68,68,.4)" : "none"
+  }}/>
+);
+
+const StatusBadge = ({ status }) => {
+  const cfg = STATUS[status] || STATUS.IDLE;
+  return (
+    <span className="bdg" style={{ background: cfg.color+"1c", color: cfg.color, border: `1px solid ${cfg.color}35` }}>
+      <span>{cfg.icon}</span><span>{cfg.label}</span>
+    </span>
+  );
+};
+
+const Sparkline = ({ data, color, w=80, h=22 }) => {
+  if (!data || data.length === 0) return <div style={{ width:w, height:h, background:"#0a0a10", borderRadius:3 }}/>;
+  const max = Math.max(1, ...data);
+  return (
+    <div style={{ display:"flex", alignItems:"flex-end", gap:2, width:w, height:h, "--tc":color }}>
+      {data.map((v,i) => (
+        <div key={i} className="spark-bar" style={{ height: Math.max(2, (v/max)*h) + "px" }} title={`${v} runs`}/>
+      ))}
+    </div>
+  );
+};
+
+// --- CRITICAL ERROR DETECTION ---
+const detectCriticalErrors = (logs, alerts, health) => {
+  const errors = [];
+  const corpus = [
+    ...logs.slice(0,200).map(l => (l.action||"") + " " + JSON.stringify(l.details||{})),
+    ...alerts.map(a => (a.title||"") + " " + (a.body||"")),
+    ...health.map(h => (h.issue||"")),
+  ].join(" ").toLowerCase();
+
+  if (/openai.*quota|insufficient[_ ]quota|429.*openai|rate[_ ]limit.*openai/i.test(corpus)) {
+    errors.push({
+      severity:"critical", kind:"openai-quota",
+      title:"OpenAI quota agotada",
+      detail:"Uno o mas agentes reportan 429 / insufficient_quota en llamadas a OpenAI. Los workflows que dependen de GPT estan fallando.",
+      fix:[ "Verificar billing en platform.openai.com/usage",
+            "Recargar creditos o subir tier",
+            "Considerar fallback a Claude/Gemini para workflows no-criticos",
+            "Revisar agentes afectados en Activity Feed filtrando status=error"]
+    });
+  }
+  if (/notion.*unauthorized|notion.*invalid[_ ]?token|notion_api_token|notion.*401/i.test(corpus)) {
+    errors.push({
+      severity:"critical", kind:"notion-token",
+      title:"Notion token invalido",
+      detail:"Credencial de Notion rechazando requests (401). Workflows que escriben a Notion no estan sincronizando.",
+      fix:[ "Regenerar integration token en notion.so/my-integrations",
+            "Actualizar credencial en n8n Cloud > Credentials > Notion",
+            "Re-compartir las bases de datos con la integracion",
+            "Re-ejecutar workflows afectados manualmente"]
+    });
+  }
+  if (/sk-[a-z0-9]{20,}|api[_ ]?key.*(leaked|exposed)|credentials?.*exposed/i.test(corpus)) {
+    errors.push({
+      severity:"critical", kind:"api-key-exposed",
+      title:"API key expuesta en logs",
+      detail:"Se detecto lo que parece ser una API key en texto plano en logs. ROTAR INMEDIATAMENTE.",
+      fix:[ "Revocar la key en el proveedor (OpenAI/Anthropic/etc)",
+            "Emitir nueva key y actualizar en n8n Credentials",
+            "Auditar logs historicos en aria_agent_log y purgar",
+            "Revisar reglas de log sanitization en workflows"]
+    });
+  }
+
+  const last = {};
+  logs.forEach(l => { if (!last[l.agent_name]) last[l.agent_name] = l.created_at; });
+  const inactive = A.filter(a => expectsDaily(a.cr) && (!last[a.wf] || hoursAgo(last[a.wf]) > 48));
+  if (inactive.length >= 3) {
+    errors.push({
+      severity:"warning", kind:"inactive-daily",
+      title:`${inactive.length} workflows diarios inactivos 48h+`,
+      detail:"Varios agentes que deberian correr diario no han reportado. Puede ser workflow desactivado, trigger roto o credencial expirada.",
+      affected: inactive.map(a => `${a.name} (${a.wf})`),
+      fix:[ "Ir a n8n Cloud > Workflows y verificar que esten Active",
+            "Revisar el nodo Cron de cada workflow",
+            "Ejecutar manualmente para reproducir el error",
+            "Revisar creditos/credenciales de servicios externos"]
+    });
+  }
+  return errors;
+};
+
+const CriticalBanner = ({ errors, onOpen }) => {
+  if (errors.length === 0) return null;
+  return (
+    <div style={{ padding:"10px 24px", background:"linear-gradient(90deg,rgba(239,68,68,.12),rgba(251,146,60,.08))", borderBottom:"1px solid rgba(239,68,68,.25)", display:"flex", alignItems:"center", gap:14, flexWrap:"wrap" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:6, animation:"pulse-red 2s infinite", padding:"4px 10px", borderRadius:6, background:"rgba(239,68,68,.15)", border:"1px solid rgba(239,68,68,.35)" }}>
+        <span style={{ fontSize:13 }}>{'🚨'}</span>
+        <span style={{ fontSize:11, fontWeight:700, color:"#FCA5A5", letterSpacing:1 }}>{errors.length} ERROR{errors.length>1?"ES":""} CRITICO{errors.length>1?"S":""}</span>
+      </div>
+      <div style={{ display:"flex", gap:8, flex:1, flexWrap:"wrap" }}>
+        {errors.map((e,i) => (
+          <button key={i} onClick={() => onOpen(e)} className="btn" style={{
+            background: (e.severity==="critical"?"#7f1d1d":"#78350f")+"60",
+            color: e.severity==="critical"?"#FCA5A5":"#FCD34D",
+            border: `1px solid ${e.severity==="critical"?"#EF4444":"#FB923C"}40`,
+            fontWeight:600
+          }}>
+            {e.title} <span style={{ opacity:.6, marginLeft:4 }}>→</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const CriticalModal = ({ error, onClose }) => {
+  if (!error) return null;
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}>{'×'}</button>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
+          <span style={{ fontSize:24 }}>{error.severity==="critical"?"🚨":"⚠️"}</span>
+          <div>
+            <div style={{ fontSize:16, fontWeight:700, color:error.severity==="critical"?"#FCA5A5":"#FCD34D" }}>{error.title}</div>
+            <div style={{ fontSize:10, color:"#52525b", textTransform:"uppercase", letterSpacing:1 }}>{error.kind} • {error.severity}</div>
+          </div>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:6,background:"#0d1a0f",border:"1px solid #1a3a1f"}}><SD s="online"/><span style={{fontSize:10,color:"#22C55E",fontWeight:500,animation:"blink 2s infinite"}}>LIVE</span></div>
-        <button onClick={f2} style={{padding:"5px 12px",borderRadius:6,border:"1px solid #27272a",background:"#0d0d12",color:"#71717a",fontSize:10,cursor:"pointer"}}>{ld?"...":"REFRESH"}</button>
-      </div>
-
-      {/* TICKER */}
-      <div className="tk" style={{color:"#3f3f46"}}><span>{logs.slice(0,12).map(l=>{const ag=A.find(x=>x.wf===l.agent_name);return`${ag?.name||l.agent_name}: ${l.status==="success"?"OK":"ERR"} (${tA(l.created_at)})`}).join("  \u25cf  ")+(logs.length===0?"  Esperando actividad...  \u25cf  50 agentes  \u25cf  Supabase live":"  \u25cf  ")}</span></div>
-
-      {/* TABS */}
-      <div style={{padding:"12px 24px",display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-        {["grid","feed","meetings","memory","alerts"].map(v=>(<button key={v} onClick={()=>setView(v)} style={{padding:"6px 16px",borderRadius:6,fontSize:11,fontWeight:500,border:"1px solid "+(view===v?"#2a2a3a":"transparent"),cursor:"pointer",background:view===v?"#1a1a24":"transparent",color:view===v?"#fff":"#52525b"}}>{v==="grid"?"Mission Rooms":v==="feed"?"Activity":v==="meetings"?"Reuniones":v==="memory"?`Memoria (${memories.length})`:`Alertas (${alerts.length})`}</button>))}
-        <div style={{flex:1}}/>
-        {view==="grid"&&<div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-          <button onClick={()=>setFilter("all")} style={{padding:"4px 12px",borderRadius:6,fontSize:10,border:"none",cursor:"pointer",fontWeight:500,textTransform:"uppercase",background:filter==="all"?"#1a1a24":"transparent",color:filter==="all"?"#fff":"#3f3f46"}}>All</button>
-          {teams.map(k=>(<button key={k} onClick={()=>setFilter(k)} style={{padding:"4px 12px",borderRadius:6,fontSize:10,border:"none",cursor:"pointer",fontWeight:500,background:filter===k?T[k].c+"18":"transparent",color:filter===k?T[k].c:"#3f3f46"}}>{T[k].e}</button>))}
-        </div>}
-      </div>
-
-      <div style={{padding:"0 24px 24px"}}>
-        {/* MISSION ROOMS */}
-        {view==="grid"&&ft.map(tk=>{const tm=T[tk];const agents=A.filter(a=>a.t===tk);const onC=agents.filter(a=>st[a.wf]).length;return(
-          <div key={tk} className="rm" style={{"--tc":tm.c,"--tc-glow":tm.c+"30",background:tm.bg,borderColor:tm.c+"15"}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-              <span style={{fontSize:22}}>{tm.e}</span>
-              <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:tm.c,letterSpacing:1.5,textTransform:"uppercase"}}>{tm.n}</div><div style={{fontSize:9,color:"#52525b"}}>{onC}/{agents.length} reportando</div></div>
+        <div style={{ fontSize:12, color:"#d4d4d8", lineHeight:1.7, marginBottom:16, padding:12, background:"#0d0d12", borderRadius:8, borderLeft:"3px solid "+(error.severity==="critical"?"#EF4444":"#FB923C") }}>
+          {error.detail}
+        </div>
+        {error.affected && (
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:10, color:"#71717a", textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>Agentes afectados</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+              {error.affected.map((name,i) => <span key={i} className="bdg" style={{ background:"#1a1a24", color:"#a1a1aa" }}>{name}</span>)}
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:10}}>
-              {agents.map(a=>{const s=st[a.wf];const on=!!s;const rate=s?Math.round(s.ok/Math.max(s.n,1)*100):0;const l3=al[a.wf]||[];const op=sel===a.id;return(
-                <div key={a.id} className={"cd"+(on?" on":"")} style={{"--tc":tm.c,"--tc-glow":tm.c+"20"}} onClick={()=>setSel(op?null:a.id)}>
-                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-                    <Av a={a} sz={42} on={on}/>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:14,fontWeight:700,color:tm.c}}>{a.name}</span><SD s={on?s.last.status:"off"}/></div>
-                      <div style={{fontSize:10,color:"#71717a"}}>{a.alias}</div>
-                    </div>
-                    <div style={{textAlign:"right"}}><div style={{fontSize:9,padding:"2px 6px",borderRadius:4,background:tm.c+"12",color:tm.c,fontWeight:600}}>{a.cr}</div>{s&&<div style={{fontSize:9,color:"#3f3f46",marginTop:2}}>{tA(s.last.created_at)}</div>}</div>
+          </div>
+        )}
+        <div>
+          <div style={{ fontSize:10, color:"#34D399", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>Pasos de fix</div>
+          <ol style={{ paddingLeft:20, fontSize:12, color:"#d4d4d8", lineHeight:1.8 }}>
+            {error.fix.map((step,i) => <li key={i} style={{ marginBottom:4 }}>{step}</li>)}
+          </ol>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const LogDetailPanel = ({ log, onClose }) => {
+  if (!log) return null;
+  const details = log.details || {};
+  const ag = A.find(x => x.wf === log.agent_name);
+  const tm = ag ? T[ag.t] : { c:"#555", n:"Unknown" };
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}>{'×'}</button>
+        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16, paddingBottom:14, borderBottom:"1px solid #1a1a24" }}>
+          {ag && <Av a={ag} sz={48}/>}
+          <div style={{ flex:1 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+              <span style={{ fontSize:16, fontWeight:700, color:tm.c }}>{ag?.name || log.agent_name}</span>
+              <SD s={log.status}/>
+              <span className="bdg" style={{
+                background: log.status==="success"?"#22C55E20":log.status==="error"?"#EF444420":"#27272a",
+                color: log.status==="success"?"#22C55E":log.status==="error"?"#EF4444":"#a1a1aa"
+              }}>{log.status}</span>
+            </div>
+            <div style={{ fontSize:11, color:"#71717a", marginTop:3 }}>{ag?.alias} • {tm.n} • {tA(log.created_at)}</div>
+          </div>
+        </div>
+        {details.summary && (
+          <div style={{ padding:12, background:"#0d0d12", borderRadius:8, borderLeft:`3px solid ${tm.c}`, marginBottom:14, fontSize:13, color:"#e4e4e7", lineHeight:1.6 }}>
+            {details.summary}
+          </div>
+        )}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:14 }}>
+          <div style={{ padding:10, background:"#0d0d12", borderRadius:8 }}>
+            <div style={{ fontSize:9, color:"#71717a", textTransform:"uppercase", letterSpacing:1 }}>Accion</div>
+            <div style={{ fontSize:12, color:"#d4d4d8", marginTop:3 }}>{log.action || "—"}</div>
+          </div>
+          <div style={{ padding:10, background:"#0d0d12", borderRadius:8 }}>
+            <div style={{ fontSize:9, color:"#71717a", textTransform:"uppercase", letterSpacing:1 }}>Items</div>
+            <div style={{ fontSize:12, color:"#d4d4d8", marginTop:3 }}>{log.items_processed || 0}</div>
+          </div>
+          {details.outcome && (
+            <div style={{ padding:10, background:"#0d0d12", borderRadius:8 }}>
+              <div style={{ fontSize:9, color:"#71717a", textTransform:"uppercase", letterSpacing:1 }}>Outcome</div>
+              <div style={{ fontSize:12, color:"#34D399", marginTop:3 }}>{details.outcome}</div>
+            </div>
+          )}
+          {log.created_at && (
+            <div style={{ padding:10, background:"#0d0d12", borderRadius:8 }}>
+              <div style={{ fontSize:9, color:"#71717a", textTransform:"uppercase", letterSpacing:1 }}>Timestamp</div>
+              <div style={{ fontSize:11, color:"#d4d4d8", marginTop:3 }}>{new Date(log.created_at).toLocaleString()}</div>
+            </div>
+          )}
+        </div>
+        {details.entities && Object.keys(details.entities).length > 0 && (
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:10, color:"#71717a", textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>Entidades</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+              {Object.entries(details.entities).map(([k,v],i) => (
+                <span key={i} className="bdg" style={{ background:"#1a1a24", color:"#d4d4d8" }}>
+                  <span style={{ color:"#71717a" }}>{k}:</span>&nbsp;{Array.isArray(v) ? v.length : String(v).slice(0,30)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        {details.metrics && Object.keys(details.metrics).length > 0 && (
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:10, color:"#71717a", textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>Metricas</div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))", gap:6 }}>
+              {Object.entries(details.metrics).map(([k,v],i) => (
+                <div key={i} style={{ padding:8, background:"#0d0d12", borderRadius:6 }}>
+                  <div style={{ fontSize:9, color:"#71717a" }}>{k}</div>
+                  <div style={{ fontSize:13, color:"#FBBF24", fontWeight:600, marginTop:2 }}>{typeof v === "number" ? v.toLocaleString() : String(v)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <details>
+          <summary>Ver JSON raw</summary>
+          <pre style={{ fontSize:10, color:"#71717a", background:"#06060a", padding:12, borderRadius:8, overflow:"auto", maxHeight:280, marginTop:8 }}>
+{JSON.stringify(log, null, 2)}
+          </pre>
+        </details>
+      </div>
+    </div>
+  );
+};
+
+// --- MEETING REQUEST MODAL ---
+const MEETING_TEMPLATES = [
+  { name: "Retro Semanal", reason: "retro", suggested: ["Seguimiento 1", "Reportes 3", "Finanzas 3", "Academia 7"], desc: "Revision de la semana: KPIs, errores, bloqueos" },
+  { name: "Laboratorio de Ideas", reason: "lab", suggested: ["WhatsApp 3", "Academia 2", "RAG 1", "Op 1", "Util 4"], desc: "Brainstorm de nuevas automatizaciones y oportunidades" },
+  { name: "Comite de Cobranza", reason: "committee", suggested: ["Finanzas 1", "Finanzas 2", "Seguimiento 3", "Legal 1"], desc: "Estado de cartera, clientes morosos, acciones legales" },
+  { name: "Sync Operativo", reason: "sync", suggested: ["Op 1", "Op 2", "Op 4", "Seguimiento 1", "Pochteca 1"], desc: "Operaciones activas, glosa, despacho" },
+  { name: "Crisis de Salud", reason: "crisis", suggested: ["Salud 1", "Salud 2", "Salud 3", "Util 4"], desc: "Workflows fallando, alertas criticas" },
+  { name: "Comite RH", reason: "rh", suggested: ["RH 1", "RH 2", "RH 3", "RH 4"], desc: "Talento, clima laboral, evaluaciones" },
+  { name: "Personalizado", reason: "custom", suggested: [], desc: "Define tu propio tema y agentes" },
+];
+
+function MeetingRequestModal({ agents, teams, onClose, onSubmit }) {
+  const [template, setTemplate] = useState(MEETING_TEMPLATES[0]);
+  const [topic, setTopic] = useState("");
+  const [priority, setPriority] = useState("media");
+  const [selected, setSelected] = useState(new Set(MEETING_TEMPLATES[0].suggested));
+  const [teamFilter, setTeamFilter] = useState("all");
+
+  useEffect(() => {
+    setSelected(new Set(template.suggested));
+    if (template.reason !== "custom") setTopic(template.desc);
+  }, [template]);
+
+  const toggleAgent = (wf) => {
+    const n = new Set(selected);
+    if (n.has(wf)) n.delete(wf); else n.add(wf);
+    setSelected(n);
+  };
+
+  const submit = () => {
+    if (!topic.trim()) return alert("Escribe el tema de la reunion");
+    if (selected.size === 0) return alert("Selecciona al menos un agente");
+    onSubmit({
+      topic: topic.trim(),
+      participants: Array.from(selected),
+      priority,
+      trigger_reason: template.reason
+    });
+  };
+
+  const filteredAgents = teamFilter === "all" ? agents : agents.filter(a => a.t === teamFilter);
+
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 820 }}>
+        <button className="modal-close" onClick={onClose}>{'×'}</button>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <span style={{ fontSize:22 }}>{'✨'}</span>
+            <div>
+              <div style={{ fontSize:16, fontWeight:700, color:"#C4B5FD" }}>Convocar Reunion On-Demand</div>
+              <div style={{ fontSize:10, color:"#52525b", textTransform:"uppercase", letterSpacing:1 }}>Selecciona agentes y lanza</div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:10, color:"#71717a", textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>Plantilla</div>
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+            {MEETING_TEMPLATES.map(t => (
+              <button key={t.reason} onClick={() => setTemplate(t)} className="btn" style={{
+                background: template.reason===t.reason ? "#8B5CF633" : "#1a1a24",
+                color: template.reason===t.reason ? "#C4B5FD" : "#a1a1aa",
+                border: "1px solid " + (template.reason===t.reason ? "#8B5CF6" : "#27272a"),
+                fontSize:10
+              }}>{t.name}</button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:10, color:"#71717a", textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>Tema / Objetivo</div>
+          <textarea value={topic} onChange={e => setTopic(e.target.value)}
+            placeholder="Que quieres que analicen? Ej: Analizar cartera vencida Pochteca y proponer acciones"
+            style={{
+              width:"100%", minHeight:80, padding:10, background:"#0d0d12",
+              border:"1px solid #27272a", borderRadius:8, color:"#d4d4d8",
+              fontSize:12, fontFamily:"inherit", resize:"vertical"
+            }}/>
+        </div>
+
+        <div style={{ marginBottom:14, display:"flex", gap:12, alignItems:"center", flexWrap:"wrap" }}>
+          <div>
+            <div style={{ fontSize:10, color:"#71717a", textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>Prioridad</div>
+            <div style={{ display:"flex", gap:4 }}>
+              {["critica","alta","media","baja"].map(p => (
+                <button key={p} onClick={() => setPriority(p)} className="btn" style={{
+                  background: priority===p ? ({critica:"#EF444433", alta:"#FB923C33", media:"#FBBF2433", baja:"#60A5FA33"}[p]) : "#1a1a24",
+                  color: priority===p ? ({critica:"#FCA5A5", alta:"#FDBA74", media:"#FDE68A", baja:"#93C5FD"}[p]) : "#a1a1aa",
+                  fontSize:10
+                }}>{p}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{ flex:1 }}/>
+          <div style={{ fontSize:10, color:"#52525b" }}>{selected.size} agentes seleccionados</div>
+        </div>
+
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:10, color:"#71717a", textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>Agentes participantes</div>
+          <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:8 }}>
+            <button onClick={() => setTeamFilter("all")} className="btn" style={{ background:teamFilter==="all"?"#1a1a24":"transparent", color:teamFilter==="all"?"#fff":"#52525b", padding:"3px 10px", fontSize:9, minHeight:24 }}>All</button>
+            {Object.keys(teams).map(k => (
+              <button key={k} onClick={() => setTeamFilter(k)} className="btn" style={{ background:teamFilter===k?teams[k].c+"22":"transparent", color:teamFilter===k?teams[k].c:"#52525b", padding:"3px 10px", fontSize:9, minHeight:24 }} title={teams[k].n}>{teams[k].e}</button>
+            ))}
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:4, maxHeight:280, overflowY:"auto", padding:6, background:"#0a0a10", borderRadius:8, border:"1px solid #1a1a24" }}>
+            {filteredAgents.map(a => {
+              const on = selected.has(a.wf);
+              const c = teams[a.t]?.c || "#666";
+              return (
+                <div key={a.id} onClick={() => toggleAgent(a.wf)} style={{
+                  display:"flex", alignItems:"center", gap:6, padding:"5px 8px", borderRadius:6,
+                  background: on ? c+"22" : "transparent",
+                  border: "1px solid " + (on ? c : "transparent"),
+                  cursor:"pointer", fontSize:10, minHeight:32
+                }}>
+                  <span style={{ width:14, height:14, borderRadius:3, border:`1px solid ${c}`, background: on ? c : "transparent", display:"flex", alignItems:"center", justifyContent:"center", color:"#000", fontSize:10, fontWeight:700 }}>
+                    {on ? "✓" : ""}
+                  </span>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:600, color: on ? c : "#d4d4d8" }}>{a.name}</div>
+                    <div style={{ fontSize:8, color:"#52525b" }}>{a.alias}</div>
                   </div>
-                  <div style={{fontSize:10,color:"#52525b",lineHeight:1.5,marginBottom:8,minHeight:28,borderLeft:`2px solid ${tm.c}20`,paddingLeft:8}}>{a.role}</div>
-                  {s?<div style={{marginBottom:6}}><div style={{background:"#1a1a24",borderRadius:3,height:3,overflow:"hidden",marginBottom:3}}><div style={{width:rate+"%",height:"100%",borderRadius:3,background:rate>80?"#22C55E":rate>50?"#FBBF24":"#EF4444",transition:"width .6s ease"}}/></div><div style={{display:"flex",gap:6,fontSize:9,color:"#3f3f46"}}><span style={{color:"#22C55E"}}>{s.ok} ok</span>{s.er>0&&<span style={{color:"#EF4444"}}>{s.er} err</span>}<span style={{marginLeft:"auto"}}>{s.it} items</span><span style={{color:tm.c}}>{rate}%</span></div></div>:<div style={{height:3,background:"#1a1a24",borderRadius:3,marginBottom:6}}/>}
-                  <div style={{borderTop:`1px solid ${tm.c}10`,paddingTop:6}}>{l3.length>0?l3.map((l,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"2px 0",fontSize:9}}><SD s={l.status}/><span style={{color:"#52525b",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.action}</span><span style={{color:"#27272a"}}>{tA(l.created_at)}</span></div>)):<div style={{fontSize:9,color:"#1a1a24",fontStyle:"italic"}}>awaiting first signal...</div>}</div>
-                  {op&&<div style={{marginTop:8,padding:10,background:"#08080c",borderRadius:8,fontSize:9,color:"#52525b",lineHeight:1.8}}><div>workflow: {a.wf}</div><div>id: {a.id}</div><div>room: <span style={{color:tm.c}}>{tm.n}</span></div>{s&&<div>total: {s.n} runs | {s.it} items</div>}</div>}
-                </div>)})}
-            </div>
-          </div>)})}
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
-        {/* ACTIVITY LOG */}
-        {view==="feed"&&<div style={{background:"#0a0a10",borderRadius:12,border:"1px solid #1a1a24",maxHeight:600,overflowY:"auto"}}>{logs.length===0?<div style={{padding:"60px 20px",textAlign:"center",fontSize:13,color:"#27272a"}}>Awaiting transmissions...</div>:logs.slice(0,80).map(l=>{const ag=A.find(x=>x.wf===l.agent_name);const tm=ag?T[ag.t]:{c:"#555"};return(<div key={l.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 16px",borderBottom:"1px solid #111118",fontSize:11}}>{ag&&<Av a={ag} sz={24}/>}<SD s={l.status}/><span style={{fontWeight:600,color:tm.c,minWidth:80}}>{ag?.name||l.agent_name}</span><span style={{color:"#3f3f46",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.action}</span>{l.items_processed>0&&<span style={{color:"#27272a",fontSize:10}}>{l.items_processed}x</span>}<span style={{color:"#1a1a24",fontSize:10}}>{tA(l.created_at)}</span></div>)})}</div>}
+        <div style={{ display:"flex", gap:8, justifyContent:"flex-end", marginTop:16 }}>
+          <button onClick={onClose} className="btn" style={{ background:"#1a1a24", color:"#a1a1aa" }}>Cancelar</button>
+          <button onClick={submit} className="btn" style={{ background:"#8B5CF6", color:"#fff", fontWeight:600, minWidth:140 }}>
+            {'🚀'} Convocar
+          </button>
+        </div>
 
-        {/* MEETINGS */}
-        {view==="meetings"&&<div><div style={{fontSize:12,color:"#52525b",marginBottom:12}}>Reuniones \u2014 automaticas diario 7pm + on-demand via /reunion</div>{meetings.length===0?<div style={{padding:40,textAlign:"center",fontSize:12,color:"#27272a"}}>Primera reunion hoy a las 7pm</div>:<div style={{display:"grid",gap:8}}>{meetings.map(m=>{const dc=m.decision||"pendiente";const DC={pendiente:"#FBBF24",aprobada:"#22C55E",editada:"#60A5FA",rechazada:"#EF4444"};return(<div key={m.id} style={{background:"#0d0d12",border:"1px solid #1a1a24",borderRadius:12,padding:"14px 16px",borderLeft:`3px solid ${DC[dc]||"#FBBF24"}`}}><div style={{display:"flex",gap:6,alignItems:"center"}}><span style={{fontSize:13,fontWeight:600}}>{m.meeting_name||"Reunion"}</span>{m.is_on_demand&&<span style={{fontSize:8,padding:"1px 6px",borderRadius:4,background:"#8B5CF620",color:"#8B5CF6",fontWeight:600}}>ON-DEMAND</span>}<span style={{fontSize:8,padding:"1px 6px",borderRadius:4,background:`${DC[dc]||"#FBBF24"}15`,color:DC[dc]||"#FBBF24",fontWeight:600,textTransform:"uppercase"}}>{dc}</span></div><div style={{fontSize:10,color:"#3f3f46",marginTop:3}}>{(m.topic||"").substring(0,100)}</div><div style={{display:"flex",gap:8,marginTop:6,fontSize:9,color:"#27272a"}}><span>{(m.insights||[]).length} insights</span><span>{(m.proposals||[]).length} propuestas</span><span style={{marginLeft:"auto"}}>{tA(m.created_at)}</span></div></div>)})}</div>}</div>}
-
-        {/* MEMORY */}
-        {view==="memory"&&<div><div style={{fontSize:12,color:"#52525b",marginBottom:12}}>\ud83e\udde0 Memoria ARIA \u2014 {memories.length} memorias activas, auto-decay 30d</div><div style={{display:"grid",gap:8}}>{memories.map(m=>{const emoji={decision:"\u2705",pattern:"\ud83d\udd04",learning:"\ud83d\udca1",context:"\ud83d\udccc",preference:"\u2699\ufe0f"}[m.memory_type]||"\ud83d\udcdd";const catColor={cobranza:"#FBBF24",operacion:"#FB923C",regulatorio:"#EF4444",equipo:"#60A5FA",cliente:"#34D399",tecnologia:"#8B5CF6",general:"#71717a"}[m.category]||"#555";return(<div key={m.id} style={{background:"#0d0d12",border:"1px solid #1a1a24",borderRadius:10,padding:"12px 16px",borderLeft:`3px solid ${catColor}`}}><div style={{display:"flex",gap:8,alignItems:"center",marginBottom:4}}><span style={{fontSize:14}}>{emoji}</span><span style={{fontSize:9,padding:"2px 8px",borderRadius:4,background:catColor+"18",color:catColor,fontWeight:600,textTransform:"uppercase"}}>{m.category}</span><span style={{fontSize:9,padding:"2px 8px",borderRadius:4,background:"#1a1a24",color:"#52525b"}}>{m.memory_type}</span><span style={{marginLeft:"auto",fontSize:9,color:"#27272a"}}>rel: {(m.relevance_score||0).toFixed(2)}</span></div><div style={{fontSize:11,color:"#d4d4d8",lineHeight:1.6}}>{m.content}</div>{m.tags?.length>0&&<div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}}>{m.tags.map((t,i)=><span key={i} style={{fontSize:8,padding:"1px 6px",borderRadius:4,background:"#1a1a24",color:"#3f3f46"}}>#{t}</span>)}</div>}</div>)})}</div></div>}
-
-        {/* ALERTS */}
-        {view==="alerts"&&<div><div style={{fontSize:12,color:"#52525b",marginBottom:12}}>\ud83d\udea8 Alertas Proactivas \u2014 {alerts.length} pendientes + {health.length} health checks abiertos</div>{alerts.length===0&&health.length===0?<div style={{padding:40,textAlign:"center",fontSize:13,color:"#27272a"}}>\u2705 Sin alertas pendientes. Todo bajo control.</div>:<div style={{display:"grid",gap:8}}>{alerts.map(a=>{const sev={critical:"#EF4444",warning:"#FBBF24",info:"#60A5FA"}[a.severity]||"#555";return(<div key={a.id} style={{background:"#0d0d12",border:"1px solid #1a1a24",borderRadius:10,padding:"12px 16px",borderLeft:`3px solid ${sev}`}}><div style={{display:"flex",gap:6,alignItems:"center"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:4,background:sev+"18",color:sev,fontWeight:700,textTransform:"uppercase"}}>{a.severity}</span><span style={{fontSize:12,fontWeight:600,color:"#e4e4e7"}}>{a.title}</span></div>{a.body&&<div style={{fontSize:10,color:"#52525b",marginTop:4}}>{a.body}</div>}{a.suggested_action&&<div style={{fontSize:10,color:"#34D399",marginTop:4}}>\u2192 {a.suggested_action}</div>}<div style={{fontSize:9,color:"#27272a",marginTop:4}}>{tA(a.created_at)} \u2022 {(a.source_agents||[]).join(", ")}</div></div>)})}{health.length>0&&<div style={{marginTop:12}}><div style={{fontSize:11,fontWeight:600,color:"#F43F5E",marginBottom:8}}>\ud83c\udfe5 Health Checks Abiertos</div>{health.map(h=>{const sev={critical:"#EF4444",error:"#FB923C",warning:"#FBBF24",info:"#60A5FA"}[h.severity]||"#555";return(<div key={h.id} style={{background:"#0d0d12",border:"1px solid #1a1a24",borderRadius:8,padding:"10px 14px",borderLeft:`2px solid ${sev}`,marginBottom:6}}><div style={{fontSize:11,color:"#d4d4d8"}}>{h.issue}</div><div style={{fontSize:9,color:"#3f3f46",marginTop:3}}>{h.workflow_name} \u2022 {h.check_type} \u2022 {tA(h.created_at)}</div></div>)})}</div>}</div>}</div>}
+        <div style={{ marginTop:14, padding:10, background:"#0a0a10", borderRadius:6, fontSize:9, color:"#52525b", lineHeight:1.5 }}>
+          {'ℹ'} La solicitud se guarda en <code style={{ color:"#a1a1aa" }}>aria_agent_meetings</code> con status <code style={{ color:"#a1a1aa" }}>requested</code>. El workflow CONVOCADOR (E0HL) la procesara: analizara datos, generara insights + propuestas con IA y actualizara el registro.
+        </div>
       </div>
     </div>
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+// --- ROOT APP ---
+function MissionControlApp() {
+  const [logs, setLogs] = useState([]);
+  const [meetings, setMeetings] = useState([]);
+  const [memories, setMemories] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [health, setHealth] = useState([]);
+  const [pending, setPending] = useState([]);
+
+  const [teamFilter, setTeamFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [triggerFilter, setTriggerFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [view, setView] = useState("grid");
+  const [expanded, setExpanded] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState(null);
+  const [selectedLog, setSelectedLog] = useState(null);
+  const [selectedError, setSelectedError] = useState(null);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  // --- Autonomy handlers ---
+  const showToast = (msg, kind = "info") => {
+    setToast({ msg, kind });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  const decideMeeting = useCallback(async (meetingId, decision) => {
+    try {
+      const res = await fetch(`${SB}/aria_agent_meetings?id=eq.${meetingId}`, {
+        method: "PATCH",
+        headers: { ...HD, "Content-Type": "application/json", "Prefer": "return=minimal" },
+        body: JSON.stringify({ decision, decision_at: new Date().toISOString(), decided_by: "victor.muris@ryrservicios.com" })
+      });
+      if (!res.ok) throw new Error("Status " + res.status);
+      showToast(`Reunion ${decision} correctamente`, "success");
+      fetchAll();
+    } catch (e) {
+      showToast("Error al guardar decision: " + e.message, "error");
+    }
+  }, []);
+
+  const requestMeeting = useCallback(async ({ topic, participants, priority, trigger_reason }) => {
+    try {
+      const body = {
+        meeting_name: "Reunion On-Demand: " + (topic || "").substring(0, 40),
+        topic: topic,
+        participants: participants,
+        trigger_reason: trigger_reason || "on_demand",
+        is_on_demand: true,
+        status: "requested",
+        decision: "requested",
+        insights: [],
+        proposals: [],
+        data_analyzed: { priority: priority || "media", requested_by: "victor.muris", requested_at: new Date().toISOString() }
+      };
+      const res = await fetch(`${SB}/aria_agent_meetings`, {
+        method: "POST",
+        headers: { ...HD, "Content-Type": "application/json", "Prefer": "return=representation" },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error("Status " + res.status);
+      showToast("Reunion solicitada. CONVOCADOR la procesara en breve.", "success");
+      setShowRequestModal(false);
+      fetchAll();
+    } catch (e) {
+      showToast("Error al solicitar reunion: " + e.message, "error");
+    }
+  }, []);
+
+  const downloadMeetingPDF = useCallback((m) => {
+    try {
+      if (!window.jspdf || !window.jspdf.jsPDF) {
+        showToast("jsPDF no cargo. Revisa conexion a internet.", "error");
+        return;
+      }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: "pt", format: "letter" });
+      const margin = 48;
+      const width = 612 - margin * 2;
+      let y = margin;
+      const addText = (txt, opts = {}) => {
+        const size = opts.size || 11;
+        const bold = opts.bold || false;
+        const color = opts.color || [33, 33, 33];
+        doc.setFontSize(size);
+        doc.setFont("helvetica", bold ? "bold" : "normal");
+        doc.setTextColor(...color);
+        const lines = doc.splitTextToSize(String(txt || ""), width);
+        lines.forEach(ln => {
+          if (y > 740) { doc.addPage(); y = margin; }
+          doc.text(ln, margin, y);
+          y += size * 1.3;
+        });
+      };
+      const addLine = () => {
+        if (y > 740) { doc.addPage(); y = margin; }
+        doc.setDrawColor(200); doc.line(margin, y, margin + width, y); y += 10;
+      };
+      // Header
+      doc.setFillColor(13, 40, 24);
+      doc.rect(0, 0, 612, 70, "F");
+      doc.setTextColor(212, 168, 67);
+      doc.setFontSize(22); doc.setFont("helvetica", "bold");
+      doc.text("ARIA", margin, 40);
+      doc.setFontSize(10); doc.setFont("helvetica", "normal");
+      doc.setTextColor(200, 200, 200);
+      doc.text("RyR Servicios Aduanales | Patente 1941", margin, 58);
+      doc.setFontSize(9);
+      doc.text(new Date(m.created_at || Date.now()).toLocaleString("es-MX"), 612 - margin, 40, { align: "right" });
+      y = 100;
+
+      addText(m.meeting_name || "Reunion", { size: 16, bold: true, color: [46, 125, 50] });
+      y += 6;
+      if (m.topic) { addText("Tema: " + m.topic, { size: 11, color: [100, 100, 100] }); y += 4; }
+      if (Array.isArray(m.participants) && m.participants.length) {
+        addText("Participantes: " + m.participants.join(", "), { size: 10, color: [100, 100, 100] });
+        y += 4;
+      }
+      addText("Decision: " + (m.decision || "pendiente").toUpperCase(), { size: 10, bold: true, color: [180, 130, 20] });
+      y += 8; addLine();
+
+      if (m.minuta_text) {
+        addText("MINUTA", { size: 13, bold: true });
+        y += 4;
+        addText(m.minuta_text);
+        y += 8; addLine();
+      }
+
+      const insights = Array.isArray(m.insights) ? m.insights : [];
+      if (insights.length > 0) {
+        addText("HALLAZGOS", { size: 13, bold: true, color: [180, 130, 20] });
+        y += 4;
+        insights.forEach((ins, i) => {
+          const obj = typeof ins === "object" && ins ? ins : { text: String(ins) };
+          const prefix = obj.agent ? `[${obj.agent}] ` : "";
+          addText(`${i + 1}. ${prefix}${obj.text || obj.message || ""}`);
+        });
+        y += 8; addLine();
+      }
+
+      const proposals = Array.isArray(m.proposals) ? m.proposals : [];
+      if (proposals.length > 0) {
+        addText("PROPUESTAS", { size: 13, bold: true, color: [34, 139, 34] });
+        y += 4;
+        proposals.forEach((p, i) => {
+          const obj = typeof p === "object" && p ? p : { title: String(p) };
+          addText(`${i + 1}. ${obj.title || ""}`, { bold: true });
+          if (obj.priority) addText("   Prioridad: " + obj.priority.toUpperCase(), { size: 9, color: [120, 120, 120] });
+          if (obj.impact) addText("   Impacto: " + obj.impact, { size: 10, color: [80, 80, 80] });
+          if (obj.owner || obj.responsible) {
+            addText(`   Owner: ${obj.owner || "-"}  |  Responsable: ${obj.responsible || "-"}`, { size: 9, color: [120, 120, 120] });
+          }
+          y += 2;
+        });
+      }
+
+      // Footer
+      const pages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8); doc.setTextColor(150);
+        doc.text(`ARIA Observatory v3  |  Pagina ${i}/${pages}`, 306, 780, { align: "center" });
+      }
+      const fname = `minuta-${(m.meeting_name || "reunion").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-${(m.id || "").substring(0, 8)}.pdf`;
+      doc.save(fname);
+      showToast("PDF generado: " + fname, "success");
+    } catch (e) {
+      showToast("Error generando PDF: " + e.message, "error");
+    }
+  }, []);
+
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const q = p.get("agent");
+    if (q) {
+      const found = A.find(a => a.name.toLowerCase() === q.toLowerCase() || a.wf.toLowerCase() === q.toLowerCase());
+      if (found) setExpanded(found.id);
+    }
+  }, []);
+
+  const fetchAll = useCallback(async () => {
+    try {
+      const [l, m, mem, al, h, pd] = await Promise.all([
+        fetch(`${SB}/aria_agent_log?order=created_at.desc&limit=500`, { headers: HD }).then(r => r.json()).catch(() => []),
+        fetch(`${SB}/aria_agent_meetings?order=created_at.desc&limit=20`, { headers: HD }).then(r => r.json()).catch(() => []),
+        fetch(`${SB}/aria_memory?is_active=eq.true&order=relevance_score.desc&limit=30`, { headers: HD }).then(r => r.json()).catch(() => []),
+        fetch(`${SB}/aria_proactive_alerts?status=eq.pending&order=created_at.desc&limit=15`, { headers: HD }).then(r => r.json()).catch(() => []),
+        fetch(`${SB}/aria_health_checks?status=eq.open&order=created_at.desc&limit=15`, { headers: HD }).then(r => r.json()).catch(() => []),
+        fetch(`${SB}/pendientes_tracker?estado=neq.resuelto&estado=neq.cancelado&order=created_at.desc&limit=20`, { headers: HD }).then(r => r.json()).catch(() => []),
+      ]);
+      if (Array.isArray(l)) setLogs(l);
+      if (Array.isArray(m)) setMeetings(m);
+      if (Array.isArray(mem)) setMemories(mem);
+      if (Array.isArray(al)) setAlerts(al);
+      if (Array.isArray(h)) setHealth(h);
+      if (Array.isArray(pd)) setPending(pd);
+    } catch (_) {}
+    setLoading(false);
+    setLastRefresh(new Date());
+  }, []);
+
+  useEffect(() => {
+    fetchAll();
+    const id = setInterval(fetchAll, 20000);
+    return () => clearInterval(id);
+  }, [fetchAll]);
+
+  const stats = useMemo(() => {
+    const out = {};
+    const nowMs = Date.now();
+    const day = 86400000;
+    A.forEach(a => {
+      out[a.wf] = { last:null, n:0, ok:0, err:0, items:0, ok24:0, err24:0, last24:null, spark: Array(7).fill(0) };
+    });
+    logs.forEach(l => {
+      const k = l.agent_name;
+      if (!out[k]) return;
+      const s = out[k];
+      if (!s.last) s.last = l;
+      s.n++;
+      if (l.status === "success") s.ok++;
+      if (l.status === "error") s.err++;
+      s.items += l.items_processed || 0;
+      const age = nowMs - new Date(l.created_at).getTime();
+      if (age < day) {
+        if (!s.last24) s.last24 = l;
+        if (l.status === "success") s.ok24++;
+        if (l.status === "error") s.err24++;
+      }
+      const dayIdx = Math.floor(age / day);
+      if (dayIdx >= 0 && dayIdx < 7) s.spark[6 - dayIdx]++;
+    });
+    return out;
+  }, [logs]);
+
+  const recentByAgent = useMemo(() => {
+    const out = {};
+    logs.forEach(l => {
+      if (!out[l.agent_name]) out[l.agent_name] = [];
+      if (out[l.agent_name].length < 3) out[l.agent_name].push(l);
+    });
+    return out;
+  }, [logs]);
+
+  const agentStatus = useMemo(() => {
+    const out = {};
+    A.forEach(a => { out[a.id] = computeStatus(a, stats[a.wf]); });
+    return out;
+  }, [stats]);
+
+  const criticalErrors = useMemo(() => detectCriticalErrors(logs, alerts, health), [logs, alerts, health]);
+
+  const filteredAgents = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return A.filter(a => {
+      if (teamFilter !== "all" && a.t !== teamFilter) return false;
+      if (statusFilter !== "all" && agentStatus[a.id] !== statusFilter) return false;
+      if (triggerFilter !== "all" && classifyTriggerType(a.cr) !== triggerFilter) return false;
+      if (q && !(a.name.toLowerCase().includes(q) || a.alias.toLowerCase().includes(q) || a.role.toLowerCase().includes(q) || a.wf.toLowerCase().includes(q))) return false;
+      return true;
+    });
+  }, [teamFilter, statusFilter, triggerFilter, search, agentStatus]);
+
+  const teamsToRender = useMemo(() => {
+    const g = {};
+    filteredAgents.forEach(a => { (g[a.t] = g[a.t] || []).push(a); });
+    return g;
+  }, [filteredAgents]);
+
+  const totalAgents = A.length;
+  const statusCounts = useMemo(() => {
+    const c = { OK:0, IDLE:0, WARNING:0, ERROR:0, FIXPENDING:0 };
+    A.forEach(a => { c[agentStatus[a.id]]++; });
+    return c;
+  }, [agentStatus]);
+
+  return (
+    <div style={{ background:"#06060a", color:"#d4d4d8", minHeight:"100vh", fontFamily:"'JetBrains Mono','Fira Code',monospace" }}>
+      <div style={{ padding:"14px 24px", display:"flex", alignItems:"center", gap:14, borderBottom:"1px solid #1a1a24", flexWrap:"wrap" }}>
+        <div style={{ width:38, height:38, borderRadius:10, background:"linear-gradient(135deg,#1A5C3A,#0a1f12)", display:"flex", alignItems:"center", justifyContent:"center", border:"1px solid #1A5C3A40" }}>
+          <span style={{ color:"#D4A843", fontSize:18, fontWeight:700 }}>A</span>
+        </div>
+        <div style={{ flex:1, minWidth:220 }}>
+          <div style={{ fontSize:15, fontWeight:600, letterSpacing:1, textTransform:"uppercase", color:"#e4e4e7" }}>
+            ARIA Observatory <span style={{ color:"#52525b", fontSize:11 }}>v3</span>
+          </div>
+          <div style={{ fontSize:10, color:"#52525b" }}>
+            {totalAgents} agentes {'•'} 9 rooms {'•'} {logs.length} runs {'•'} {memories.length} memorias {'•'} {alerts.length} alertas
+            {lastRefresh && <span> {'—'} {lastRefresh.toLocaleTimeString()}</span>}
+          </div>
+        </div>
+        <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap", fontSize:10 }}>
+          <span style={{ color:"#22C55E" }}>{'●'} {statusCounts.OK} OK</span>
+          {statusCounts.ERROR > 0 && <span style={{ color:"#EF4444" }}>{'●'} {statusCounts.ERROR} ERR</span>}
+          {statusCounts.WARNING > 0 && <span style={{ color:"#FBBF24" }}>{'●'} {statusCounts.WARNING} WARN</span>}
+          {statusCounts.FIXPENDING > 0 && <span style={{ color:"#FB923C" }}>{'●'} {statusCounts.FIXPENDING} FIX</span>}
+          <span style={{ color:"#71717a" }}>{'●'} {statusCounts.IDLE} IDLE</span>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 12px", borderRadius:6, background:"#0d1a0f", border:"1px solid #1a3a1f" }}>
+          <SD s="online"/>
+          <span style={{ fontSize:10, color:"#22C55E", fontWeight:500, animation:"blink 2s infinite" }}>LIVE</span>
+        </div>
+        <button onClick={fetchAll} className="btn" style={{ background:"#0d0d12", color:"#71717a", border:"1px solid #27272a" }}>
+          {loading ? <span className="loader">...</span> : "REFRESH"}
+        </button>
+      </div>
+
+      <CriticalBanner errors={criticalErrors} onOpen={setSelectedError}/>
+
+      <div className="tk" style={{ color:"#3f3f46" }}>
+        <span>
+          {logs.slice(0,15).map(l => {
+            const ag = A.find(x => x.wf === l.agent_name);
+            return `${ag?.name || l.agent_name}: ${l.status === "success" ? "OK" : "ERR"} (${tA(l.created_at)})`;
+          }).join("  ●  ") + (logs.length === 0 ? "  Esperando actividad...  ●  57 agentes  ●  9 mission rooms  ●  Supabase live  ●  " : "  ●  ")}
+        </span>
+      </div>
+
+      <div style={{ padding:"12px 24px", display:"flex", gap:6, alignItems:"center", flexWrap:"wrap", borderBottom:"1px solid #1a1a24" }}>
+        {["grid","feed","alerts","memory","meetings"].map(v => (
+          <button key={v} onClick={() => setView(v)} className="btn" style={{
+            border: "1px solid " + (view===v ? "#2a2a3a" : "transparent"),
+            background: view===v ? "#1a1a24" : "transparent",
+            color: view===v ? "#fff" : "#52525b",
+            fontWeight:500
+          }}>
+            {v==="grid" ? "Mission Rooms" : v==="feed" ? `Activity (${logs.length})` : v==="meetings" ? `Reuniones (${meetings.length})` : v==="memory" ? `Memoria (${memories.length})` : `Alertas (${alerts.length + health.length})`}
+          </button>
+        ))}
+      </div>
+
+      {view === "grid" && (
+        <div style={{ padding:"12px 24px", display:"flex", gap:10, alignItems:"center", flexWrap:"wrap", borderBottom:"1px solid #1a1a24" }}>
+          <input
+            type="text" placeholder="Buscar por nombre, alias, rol..."
+            value={search} onChange={e => setSearch(e.target.value)}
+            style={{ padding:"6px 12px", borderRadius:6, background:"#0d0d12", border:"1px solid #1a1a24", color:"#d4d4d8", fontSize:11, fontFamily:"inherit", minWidth:220, flex:"0 1 260px" }}
+          />
+          <div style={{ display:"flex", gap:3, flexWrap:"wrap", alignItems:"center" }}>
+            <span style={{ fontSize:9, color:"#52525b", marginRight:4, textTransform:"uppercase", letterSpacing:1 }}>Equipo:</span>
+            <button onClick={() => setTeamFilter("all")} className="btn" style={{ background:teamFilter==="all"?"#1a1a24":"transparent", color:teamFilter==="all"?"#fff":"#52525b", padding:"4px 10px", fontSize:10 }}>All</button>
+            {Object.keys(T).map(k => (
+              <button key={k} onClick={() => setTeamFilter(k)} className="btn" style={{ background:teamFilter===k?T[k].c+"22":"transparent", color:teamFilter===k?T[k].c:"#52525b", padding:"4px 10px", fontSize:10 }} title={T[k].n}>{T[k].e}</button>
+            ))}
+          </div>
+          <div style={{ display:"flex", gap:3, flexWrap:"wrap", alignItems:"center" }}>
+            <span style={{ fontSize:9, color:"#52525b", marginRight:4, textTransform:"uppercase", letterSpacing:1 }}>Status:</span>
+            <button onClick={() => setStatusFilter("all")} className="btn" style={{ background:statusFilter==="all"?"#1a1a24":"transparent", color:statusFilter==="all"?"#fff":"#52525b", padding:"4px 10px", fontSize:10 }}>All</button>
+            {Object.keys(STATUS).map(k => (
+              <button key={k} onClick={() => setStatusFilter(k)} className="btn" style={{ background:statusFilter===k?STATUS[k].color+"22":"transparent", color:statusFilter===k?STATUS[k].color:"#52525b", padding:"4px 10px", fontSize:10 }}>
+                {STATUS[k].icon} {STATUS[k].label}
+              </button>
+            ))}
+          </div>
+          <div style={{ display:"flex", gap:3, flexWrap:"wrap", alignItems:"center" }}>
+            <span style={{ fontSize:9, color:"#52525b", marginRight:4, textTransform:"uppercase", letterSpacing:1 }}>Trigger:</span>
+            <button onClick={() => setTriggerFilter("all")} className="btn" style={{ background:triggerFilter==="all"?"#1a1a24":"transparent", color:triggerFilter==="all"?"#fff":"#52525b", padding:"4px 10px", fontSize:10 }}>All</button>
+            {Object.entries(TRIG_TYPES).map(([k,v]) => (
+              <button key={k} onClick={() => setTriggerFilter(k)} className="btn" style={{ background:triggerFilter===k?"#60A5FA22":"transparent", color:triggerFilter===k?"#60A5FA":"#52525b", padding:"4px 10px", fontSize:10 }}>{v.label}</button>
+            ))}
+          </div>
+          <div style={{ flex:1 }}/>
+          <span style={{ fontSize:10, color:"#52525b" }}>{filteredAgents.length}/{totalAgents} mostrados</span>
+        </div>
+      )}
+
+      <div style={{ padding:"20px 24px" }}>
+        {view === "grid" && (
+          filteredAgents.length === 0 ? (
+            <div style={{ padding:60, textAlign:"center", color:"#52525b", fontSize:13 }}>
+              Sin agentes que coincidan con los filtros.
+              <br/>
+              <button onClick={() => { setTeamFilter("all"); setStatusFilter("all"); setTriggerFilter("all"); setSearch(""); }} className="btn" style={{ marginTop:12, background:"#1a1a24", color:"#fff" }}>Limpiar filtros</button>
+            </div>
+          ) : Object.keys(T).filter(k => teamsToRender[k]).map(tk => {
+            const tm = T[tk];
+            const agents = teamsToRender[tk];
+            const okC = agents.filter(a => agentStatus[a.id] === "OK").length;
+            return (
+              <div key={tk} className="rm" style={{ "--tc":tm.c, "--tc-glow":tm.c+"30", background:tm.bg, borderColor:tm.c+"15" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
+                  <span style={{ fontSize:24 }}>{tm.e}</span>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:12, fontWeight:600, color:tm.c, letterSpacing:1.5, textTransform:"uppercase" }}>{tm.n}</div>
+                    <div style={{ fontSize:9, color:"#52525b" }}>{okC}/{agents.length} operativos</div>
+                  </div>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:12 }}>
+                  {agents.map(a => {
+                    const s = stats[a.wf];
+                    const status = agentStatus[a.id];
+                    const on = !!(s && s.last);
+                    const rate = on ? Math.round(s.ok / Math.max(s.n, 1) * 100) : 0;
+                    const recent = recentByAgent[a.wf] || [];
+                    const op = expanded === a.id;
+                    return (
+                      <div key={a.id} className={"cd" + (on ? " on" : "")} style={{ "--tc":tm.c, "--tc-glow":tm.c+"22" }} onClick={() => setExpanded(op ? null : a.id)}>
+                        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                          <Av a={a} sz={42} pulse={on}/>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:14, fontWeight:700, color:tm.c }}>{a.name}</div>
+                            <div style={{ fontSize:10, color:"#71717a" }}>{a.alias}</div>
+                          </div>
+                          <div style={{ textAlign:"right" }}>
+                            <div style={{ fontSize:9, padding:"2px 6px", borderRadius:4, background:tm.c+"14", color:tm.c, fontWeight:600 }}>{a.cr}</div>
+                            {on && <div style={{ fontSize:9, color:"#3f3f46", marginTop:2 }}>{tA(s.last.created_at)}</div>}
+                          </div>
+                        </div>
+                        <div style={{ marginBottom:8 }}><StatusBadge status={status}/></div>
+                        <div style={{ fontSize:10, color:"#52525b", lineHeight:1.5, marginBottom:8, minHeight:28, borderLeft:`2px solid ${tm.c}22`, paddingLeft:8 }}>{a.role}</div>
+                        {on ? (
+                          <div style={{ marginBottom:8 }}>
+                            <div style={{ background:"#1a1a24", borderRadius:3, height:3, overflow:"hidden", marginBottom:4 }}>
+                              <div style={{ width:rate+"%", height:"100%", borderRadius:3, background: rate>80?"#22C55E":rate>50?"#FBBF24":"#EF4444", transition:"width .6s ease" }}/>
+                            </div>
+                            <div style={{ display:"flex", gap:6, fontSize:9, color:"#3f3f46" }}>
+                              <span style={{ color:"#22C55E" }}>{s.ok} ok</span>
+                              {s.err > 0 && <span style={{ color:"#EF4444" }}>{s.err} err</span>}
+                              <span style={{ marginLeft:"auto" }}>{s.items} items</span>
+                              <span style={{ color:tm.c }}>{rate}%</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ height:3, background:"#1a1a24", borderRadius:3, marginBottom:8 }}/>
+                        )}
+                        <div style={{ borderTop:`1px solid ${tm.c}14`, paddingTop:8, display:"flex", alignItems:"center", gap:8 }}>
+                          <Sparkline data={s?.spark || []} color={tm.c} w={70} h={20}/>
+                          <span style={{ fontSize:9, color:"#3f3f46" }}>7d</span>
+                          <span style={{ fontSize:9, color:tm.c, marginLeft:"auto", fontWeight:600 }}>{s ? s.n : 0} runs</span>
+                        </div>
+                        {op && (
+                          <div style={{ marginTop:10, padding:10, background:"#08080c", borderRadius:8, fontSize:10, color:"#71717a", lineHeight:1.8 }}>
+                            <div><span style={{ color:"#52525b" }}>workflow:</span> {a.wf}</div>
+                            <div><span style={{ color:"#52525b" }}>id:</span> {a.id}</div>
+                            <div><span style={{ color:"#52525b" }}>trigger:</span> {classifyTriggerType(a.cr)} ({a.cr})</div>
+                            <div><span style={{ color:"#52525b" }}>room:</span> <span style={{ color:tm.c }}>{tm.n}</span></div>
+                            {on && <div><span style={{ color:"#52525b" }}>24h:</span> {s.ok24} ok • {s.err24} err</div>}
+                            {recent.length > 0 && (
+                              <div style={{ marginTop:8, borderTop:`1px solid ${tm.c}10`, paddingTop:8 }}>
+                                <div style={{ fontSize:9, color:"#52525b", textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>Ultimos runs</div>
+                                {recent.map((l,i) => (
+                                  <div key={i} onClick={e => { e.stopPropagation(); setSelectedLog(l); }} style={{ display:"flex", alignItems:"center", gap:6, padding:"3px 0", fontSize:9, cursor:"pointer" }}>
+                                    <SD s={l.status}/>
+                                    <span style={{ color:"#a1a1aa", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{l.action}</span>
+                                    <span style={{ color:"#52525b" }}>{tA(l.created_at)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <button onClick={e => { e.stopPropagation(); navigator.clipboard?.writeText(window.location.origin + window.location.pathname + "?agent=" + encodeURIComponent(a.name)); }} className="btn" style={{ marginTop:8, background:tm.c+"18", color:tm.c, fontSize:9, padding:"3px 8px" }}>
+                              {'🔗'} copiar deep-link
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })
+        )}
+
+        {view === "feed" && (
+          <div style={{ background:"#0a0a10", borderRadius:12, border:"1px solid #1a1a24", maxHeight:720, overflowY:"auto" }}>
+            {logs.length === 0 ? (
+              <div style={{ padding:"60px 20px", textAlign:"center", fontSize:13, color:"#27272a" }}>Awaiting transmissions...</div>
+            ) : logs.slice(0, 150).map(l => {
+              const ag = A.find(x => x.wf === l.agent_name);
+              const tm = ag ? T[ag.t] : { c:"#555" };
+              const summary = l.details?.summary || l.action || "—";
+              return (
+                <div key={l.id} onClick={() => setSelectedLog(l)} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 16px", borderBottom:"1px solid #111118", fontSize:11, cursor:"pointer", transition:"background .15s" }} onMouseEnter={e => e.currentTarget.style.background="#0d0d12"} onMouseLeave={e => e.currentTarget.style.background="transparent"}>
+                  {ag && <Av a={ag} sz={26}/>}
+                  <SD s={l.status}/>
+                  <span style={{ fontWeight:600, color:tm.c, minWidth:92 }}>{ag?.name || l.agent_name}</span>
+                  <span style={{ color:"#a1a1aa", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{summary}</span>
+                  {l.items_processed > 0 && <span style={{ color:"#71717a", fontSize:10 }}>{l.items_processed}x</span>}
+                  <span style={{ color:"#3f3f46", fontSize:10 }}>{tA(l.created_at)}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {view === "alerts" && (
+          <div>
+            <div style={{ fontSize:12, color:"#52525b", marginBottom:12 }}>
+              {'🚨'} {alerts.length} alertas pendientes {'•'} {health.length} health checks abiertos {'•'} {pending.length} pendientes tracker
+            </div>
+            {alerts.length === 0 && health.length === 0 && pending.length === 0 ? (
+              <div style={{ padding:40, textAlign:"center", fontSize:13, color:"#27272a" }}>✅ Sin alertas pendientes. Todo bajo control.</div>
+            ) : (
+              <div style={{ display:"grid", gap:8 }}>
+                {alerts.map(a => {
+                  const sev = { critical:"#EF4444", warning:"#FBBF24", info:"#60A5FA" }[a.severity] || "#555";
+                  return (
+                    <div key={a.id} style={{ background:"#0d0d12", border:"1px solid #1a1a24", borderRadius:10, padding:"12px 16px", borderLeft:`3px solid ${sev}` }}>
+                      <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
+                        <span className="bdg" style={{ background:sev+"22", color:sev }}>{a.severity}</span>
+                        <span style={{ fontSize:12, fontWeight:600, color:"#e4e4e7" }}>{a.title}</span>
+                      </div>
+                      {a.body && <div style={{ fontSize:11, color:"#a1a1aa", marginTop:6, lineHeight:1.5 }}>{a.body}</div>}
+                      {a.suggested_action && <div style={{ fontSize:10, color:"#34D399", marginTop:6 }}>→ {a.suggested_action}</div>}
+                      <div style={{ fontSize:9, color:"#52525b", marginTop:6 }}>
+                        {tA(a.created_at)}{(a.source_agents || []).length ? " • " + (a.source_agents || []).join(", ") : ""}
+                      </div>
+                    </div>
+                  );
+                })}
+                {health.length > 0 && (
+                  <div style={{ marginTop:16 }}>
+                    <div style={{ fontSize:11, fontWeight:600, color:"#F43F5E", marginBottom:8, textTransform:"uppercase", letterSpacing:1 }}>{'🏥'} Health Checks Abiertos</div>
+                    {health.map(h => {
+                      const sev = { critical:"#EF4444", error:"#FB923C", warning:"#FBBF24", info:"#60A5FA" }[h.severity] || "#555";
+                      return (
+                        <div key={h.id} style={{ background:"#0d0d12", border:"1px solid #1a1a24", borderRadius:8, padding:"10px 14px", borderLeft:`3px solid ${sev}`, marginBottom:6 }}>
+                          <div style={{ fontSize:11, color:"#d4d4d8" }}>{h.issue}</div>
+                          <div style={{ fontSize:9, color:"#52525b", marginTop:4 }}>{h.workflow_name} • {h.check_type} • {tA(h.created_at)}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {pending.length > 0 && (
+                  <div style={{ marginTop:16 }}>
+                    <div style={{ fontSize:11, fontWeight:600, color:"#60A5FA", marginBottom:8, textTransform:"uppercase", letterSpacing:1 }}>📋 Pendientes Tracker</div>
+                    {pending.map(p => (
+                      <div key={p.id} style={{ background:"#0d0d12", border:"1px solid #1a1a24", borderRadius:8, padding:"10px 14px", marginBottom:6 }}>
+                        <div style={{ fontSize:11, color:"#d4d4d8", fontWeight:600 }}>{p.titulo || (p.descripcion || "").slice(0,80) || "Pendiente"}</div>
+                        <div style={{ fontSize:9, color:"#52525b", marginTop:4 }}>{p.responsable || ""} {p.estado && `• ${p.estado}`} {p.created_at && `• ${tA(p.created_at)}`}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {view === "memory" && (
+          <div>
+            <div style={{ fontSize:12, color:"#52525b", marginBottom:12 }}>
+              {'🧠'} Memoria ARIA {'—'} {memories.length} activas, auto-decay 30d
+            </div>
+            {memories.length === 0 ? (
+              <div style={{ padding:40, textAlign:"center", fontSize:13, color:"#27272a" }}>Aun no hay memorias registradas.</div>
+            ) : (
+              <div style={{ display:"grid", gap:8 }}>
+                {memories.map(m => {
+                  const emoji = { decision:"✅", pattern:"🔄", learning:"💡", context:"📌", preference:"⚙️" }[m.memory_type] || "📝";
+                  const catColor = { cobranza:"#FBBF24", operacion:"#FB923C", regulatorio:"#EF4444", equipo:"#60A5FA", cliente:"#34D399", tecnologia:"#8B5CF6", general:"#71717a" }[m.category] || "#555";
+                  return (
+                    <div key={m.id} style={{ background:"#0d0d12", border:"1px solid #1a1a24", borderRadius:10, padding:"12px 16px", borderLeft:`3px solid ${catColor}` }}>
+                      <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:6, flexWrap:"wrap" }}>
+                        <span style={{ fontSize:14 }}>{emoji}</span>
+                        <span className="bdg" style={{ background:catColor+"22", color:catColor }}>{m.category}</span>
+                        <span className="bdg" style={{ background:"#1a1a24", color:"#a1a1aa" }}>{m.memory_type}</span>
+                        <span style={{ marginLeft:"auto", fontSize:9, color:"#52525b" }}>rel: {(m.relevance_score || 0).toFixed(2)}</span>
+                      </div>
+                      <div style={{ fontSize:11, color:"#d4d4d8", lineHeight:1.6 }}>{m.content}</div>
+                      {m.tags?.length > 0 && (
+                        <div style={{ display:"flex", gap:4, marginTop:8, flexWrap:"wrap" }}>
+                          {m.tags.map((t,i) => <span key={i} style={{ fontSize:8, padding:"1px 6px", borderRadius:4, background:"#1a1a24", color:"#71717a" }}>#{t}</span>)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {view === "meetings" && (
+          <div>
+            <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14, flexWrap:"wrap" }}>
+              <div style={{ fontSize:12, color:"#52525b", flex:1 }}>
+                {'📅'} Reuniones {'—'} automaticas 7pm + on-demand
+              </div>
+              <button onClick={() => setShowRequestModal(true)} className="btn" style={{ background:"#8B5CF622", color:"#C4B5FD", border:"1px solid #8B5CF640", fontWeight:600 }}>
+                {'✨'} Convocar Reunion
+              </button>
+            </div>
+            {meetings.length === 0 ? (
+              <div style={{ padding:40, textAlign:"center", fontSize:13, color:"#27272a" }}>Primera reunion hoy a las 7pm</div>
+            ) : (
+              <div style={{ display:"grid", gap:10 }}>
+                {meetings.map(m => {
+                  const dc = m.decision || "pendiente";
+                  const DC = { pendiente:"#FBBF24", aprobada:"#22C55E", editada:"#60A5FA", rechazada:"#EF4444", requested:"#8B5CF6" };
+                  const insights = Array.isArray(m.insights) ? m.insights : [];
+                  const proposals = Array.isArray(m.proposals) ? m.proposals : [];
+                  return (
+                    <div key={m.id} style={{ background:"#0d0d12", border:"1px solid #1a1a24", borderRadius:12, padding:"14px 16px", borderLeft:`3px solid ${DC[dc] || "#FBBF24"}` }}>
+                      <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
+                        <span style={{ fontSize:13, fontWeight:600, color:"#e4e4e7" }}>{m.meeting_name || "Reunion"}</span>
+                        {m.is_on_demand && <span className="bdg" style={{ background:"#8B5CF622", color:"#8B5CF6" }}>ON-DEMAND</span>}
+                        <span className="bdg" style={{ background:(DC[dc]||"#FBBF24")+"22", color:DC[dc]||"#FBBF24" }}>{dc}</span>
+                        <div style={{ marginLeft:"auto", display:"flex", gap:4 }}>
+                          <button onClick={() => downloadMeetingPDF(m)} title="Descargar minuta PDF" className="btn" style={{ background:"#1a1a24", color:"#C4B5FD", fontSize:10, padding:"4px 10px", minHeight:28 }}>
+                            {'📄'} PDF
+                          </button>
+                          {dc === "pendiente" && (
+                            <>
+                              <button onClick={() => decideMeeting(m.id, "aprobada")} title="Aprobar todas las propuestas" className="btn" style={{ background:"#22C55E22", color:"#22C55E", fontSize:10, padding:"4px 10px", minHeight:28 }}>{'✓'} Aprobar</button>
+                              <button onClick={() => decideMeeting(m.id, "rechazada")} title="Rechazar" className="btn" style={{ background:"#EF444422", color:"#FCA5A5", fontSize:10, padding:"4px 10px", minHeight:28 }}>{'✗'} Rechazar</button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ fontSize:11, color:"#a1a1aa", marginTop:6, lineHeight:1.5 }}>{(m.topic || "").substring(0,180)}</div>
+                      {Array.isArray(m.participants) && m.participants.length > 0 && (
+                        <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginTop:6 }}>
+                          {m.participants.map((p,i) => <span key={i} className="bdg" style={{ background:"#1a1a24", color:"#a1a1aa" }}>{p}</span>)}
+                        </div>
+                      )}
+                      <div style={{ display:"flex", gap:10, marginTop:8, fontSize:9, color:"#52525b" }}>
+                        <span>{insights.length} insights</span>
+                        <span>{proposals.length} propuestas</span>
+                        <span style={{ marginLeft:"auto" }}>{tA(m.created_at)}</span>
+                      </div>
+                      {(insights.length > 0 || proposals.length > 0) && (
+                        <details style={{ marginTop:8 }}>
+                          <summary>Ver insights y propuestas</summary>
+                          <div style={{ marginTop:10, fontSize:11, lineHeight:1.6 }}>
+                            {insights.length > 0 && (
+                              <div style={{ marginBottom:12 }}>
+                                <div style={{ fontSize:10, color:"#FBBF24", textTransform:"uppercase", letterSpacing:1, marginBottom:6, fontWeight:600 }}>{'💡'} Hallazgos</div>
+                                {insights.map((ins,i) => {
+                                  const obj = typeof ins === "object" && ins ? ins : { text: String(ins) };
+                                  return (
+                                    <div key={"i"+i} style={{ padding:"8px 10px", background:"#0a0a10", borderRadius:6, marginBottom:4, borderLeft:"2px solid #FBBF24" }}>
+                                      {obj.agent && <span style={{ fontSize:9, color:"#FBBF24", fontWeight:600, marginRight:6 }}>[{obj.agent}]</span>}
+                                      <span style={{ color:"#d4d4d8" }}>{obj.text || obj.message || JSON.stringify(obj)}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {proposals.length > 0 && (
+                              <div>
+                                <div style={{ fontSize:10, color:"#34D399", textTransform:"uppercase", letterSpacing:1, marginBottom:6, fontWeight:600 }}>{'🎯'} Propuestas</div>
+                                {proposals.map((p,i) => {
+                                  const obj = typeof p === "object" && p ? p : { title: String(p) };
+                                  const prioColor = { critica:"#EF4444", alta:"#FB923C", media:"#FBBF24", baja:"#60A5FA" }[obj.priority] || "#71717a";
+                                  const prioEmoji = { critica:"🔴", alta:"🟠", media:"🟡", baja:"🔵" }[obj.priority] || "⚪";
+                                  return (
+                                    <div key={"p"+i} style={{ padding:"10px 12px", background:"#0a0a10", borderRadius:6, marginBottom:6, borderLeft:`2px solid ${prioColor}` }}>
+                                      <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap", marginBottom:4 }}>
+                                        <span>{prioEmoji}</span>
+                                        <span style={{ fontWeight:600, color:"#e4e4e7" }}>{obj.title || JSON.stringify(obj)}</span>
+                                        {obj.priority && <span className="bdg" style={{ background:prioColor+"22", color:prioColor }}>{obj.priority}</span>}
+                                      </div>
+                                      {obj.impact && <div style={{ fontSize:10, color:"#a1a1aa", marginBottom:3 }}><span style={{ color:"#52525b" }}>Impacto:</span> {obj.impact}</div>}
+                                      {(obj.owner || obj.responsible) && (
+                                        <div style={{ fontSize:10, color:"#52525b" }}>
+                                          {obj.owner && <span>Owner: <span style={{ color:"#C4B5FD" }}>{obj.owner}</span></span>}
+                                          {obj.owner && obj.responsible && <span> {'→'} </span>}
+                                          {obj.responsible && <span>Responsable: <span style={{ color:"#60A5FA" }}>{obj.responsible}</span></span>}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <LogDetailPanel log={selectedLog} onClose={() => setSelectedLog(null)}/>
+      <CriticalModal error={selectedError} onClose={() => setSelectedError(null)}/>
+      {showRequestModal && <MeetingRequestModal agents={A} teams={T} onClose={() => setShowRequestModal(false)} onSubmit={requestMeeting}/>}
+      {toast && (
+        <div style={{
+          position:"fixed", bottom:24, right:24, zIndex:100,
+          padding:"12px 18px", borderRadius:10,
+          background: toast.kind==="success"?"#0d2818":toast.kind==="error"?"#2a0a0a":"#0a1a2a",
+          border:"1px solid " + (toast.kind==="success"?"#22C55E55":toast.kind==="error"?"#EF444455":"#60A5FA55"),
+          color: toast.kind==="success"?"#86EFAC":toast.kind==="error"?"#FCA5A5":"#93C5FD",
+          fontSize:12, fontWeight:500, maxWidth:420, boxShadow:"0 8px 32px rgba(0,0,0,.5)"
+        }}>
+          {toast.kind==="success"?"✓ ":toast.kind==="error"?"✗ ":"ℹ "}{toast.msg}
+        </div>
+      )}
+
+      <div style={{ padding:"14px 24px", borderTop:"1px solid #1a1a24", textAlign:"center", fontSize:9, color:"#27272a" }}>
+        ARIA Observatory v3 {'•'} {totalAgents} agentes {'•'} 9 mission rooms {'•'} auto-refresh 20s
+      </div>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(React.createElement(MissionControlApp));
 </script>
 </body>
