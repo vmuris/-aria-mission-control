@@ -549,6 +549,732 @@ const LogDetailPanel = ({ log, onClose }) => {
   );
 };
 
+// ========================================================
+// --- OFFICE VIEW: agents at desks + conference room ---
+// ========================================================
+
+const Humanoid = ({ color, size = 1, skin = "#f5d0a9", hair, working = false, talking = false, seed = 0 }) => {
+  const hairColor = hair || "#3a2518";
+  const blinkPeriod = 3.5 + (seed % 4);
+  const typingSpeed = 0.75 + ((seed * 0.13) % 0.35);
+  const breathOffset = (seed % 7) * 0.1;
+  return (
+    <g transform={`scale(${size})`}>
+      {/* Chair */}
+      <ellipse cx={0} cy={36} rx={18} ry={3.5} fill="#000" opacity="0.5"/>
+      <rect x={-14} y={5} width={28} height={32} fill="#1a1a28" rx="4"/>
+      <rect x={-11} y={7} width={22} height={24} fill="#0d0d16" rx="3"/>
+      <rect x={-1} y={31} width={2} height={7} fill="#1a1a28"/>
+      <line x1={-10} y1={14} x2={-10} y2={30} stroke="#2a2a3a" strokeWidth="0.6"/>
+      <line x1={10} y1={14} x2={10} y2={30} stroke="#2a2a3a" strokeWidth="0.6"/>
+
+      <g>
+        <animateTransform attributeName="transform" type="translate" values={`0 0; 0 -0.6; 0 0`} dur={`${3 + breathOffset}s`} repeatCount="indefinite"/>
+        {/* Torso/Shirt */}
+        <path d="M-12 8 L12 8 L14 30 L-14 30 Z" fill={color}/>
+        <path d="M-3 8 L0 13 L3 8 Z" fill="#fff" opacity="0.45"/>
+        <circle cx={0} cy={16} r={0.7} fill="#fff" opacity="0.6"/>
+        <circle cx={0} cy={20} r={0.7} fill="#fff" opacity="0.6"/>
+        <path d="M-12 8 Q-8 10 -4 9" stroke={color} strokeOpacity="0.3" strokeWidth="0.4" fill="none"/>
+
+        {/* Right arm (typing) */}
+        <g transform="translate(-11.5 11)">
+          <rect x={-2.5} y={0} width={5} height={15} fill={color} rx="2">
+            {working && <animateTransform attributeName="transform" type="rotate" values="-8;10;-8" dur={`${typingSpeed}s`} repeatCount="indefinite"/>}
+          </rect>
+          <circle cx={0} cy={16} r={2.5} fill={skin}/>
+        </g>
+        {/* Left arm (typing) */}
+        <g transform="translate(11.5 11)">
+          <rect x={-2.5} y={0} width={5} height={15} fill={color} rx="2">
+            {working && <animateTransform attributeName="transform" type="rotate" values="8;-10;8" dur={`${typingSpeed}s`} repeatCount="indefinite"/>}
+          </rect>
+          <circle cx={0} cy={16} r={2.5} fill={skin}/>
+        </g>
+
+        {/* Head */}
+        <g>
+          <ellipse cx={0} cy={-1} rx={0.4} ry={0.3} fill="#000" opacity="0.2"/>
+          <circle cx={0} cy={-2.5} r={9} fill={skin}/>
+          {/* Hair */}
+          <path d="M-9 -3.5 Q-9 -13 0 -13.5 Q9 -13 9 -3.5 L8 -5 L-8 -5 Z" fill={hairColor}/>
+          <path d="M-6 -10 Q-3 -12 0 -11" stroke={hairColor} strokeWidth="0.5" fill="none" opacity="0.6"/>
+          {/* Ears */}
+          <ellipse cx={-8.5} cy={-1.5} rx={1.2} ry={2} fill={skin}/>
+          <ellipse cx={8.5} cy={-1.5} rx={1.2} ry={2} fill={skin}/>
+          <ellipse cx={-8.7} cy={-1.5} rx={0.5} ry={1} fill="#e3a880"/>
+          <ellipse cx={8.7} cy={-1.5} rx={0.5} ry={1} fill="#e3a880"/>
+          {/* Eyebrows */}
+          <path d="M-5 -4 L-1.2 -4.5" stroke={hairColor} strokeWidth="0.9" strokeLinecap="round"/>
+          <path d="M1.2 -4.5 L5 -4" stroke={hairColor} strokeWidth="0.9" strokeLinecap="round"/>
+          {/* Eyes */}
+          <ellipse cx={-3} cy={-1.5} rx={1.3} ry={1.5} fill="#fff"/>
+          <ellipse cx={3} cy={-1.5} rx={1.3} ry={1.5} fill="#fff"/>
+          <ellipse cx={-2.8} cy={-1.2} rx={0.9} ry={1.2} fill="#0f0f1a">
+            <animate attributeName="ry" values="1.2;1.2;1.2;0.08;1.2" keyTimes="0;0.85;0.93;0.96;1" dur={`${blinkPeriod}s`} repeatCount="indefinite"/>
+          </ellipse>
+          <ellipse cx={3.2} cy={-1.2} rx={0.9} ry={1.2} fill="#0f0f1a">
+            <animate attributeName="ry" values="1.2;1.2;1.2;0.08;1.2" keyTimes="0;0.85;0.93;0.96;1" dur={`${blinkPeriod}s`} repeatCount="indefinite"/>
+          </ellipse>
+          <circle cx={-2.5} cy={-1.6} r={0.3} fill="#fff"/>
+          <circle cx={3.5} cy={-1.6} r={0.3} fill="#fff"/>
+          {/* Nose */}
+          <path d="M0 0 L-0.5 2 L0.5 2 Z" fill="#e8b090" opacity="0.6"/>
+          {/* Mouth */}
+          {talking ? (
+            <ellipse cx={0} cy={3.5} rx="1.6" ry="1.2" fill="#0f0f1a">
+              <animate attributeName="ry" values="0.3;1.5;0.3" dur="0.35s" repeatCount="indefinite"/>
+            </ellipse>
+          ) : (
+            <path d="M-2.2 3 Q0 4.3 2.2 3" stroke="#0f0f1a" fill="none" strokeWidth="0.85" strokeLinecap="round"/>
+          )}
+          {/* Cheeks */}
+          <circle cx={-6} cy={1.5} r={1.6} fill="#f5a5a5" opacity="0.5"/>
+          <circle cx={6} cy={1.5} r={1.6} fill="#f5a5a5" opacity="0.5"/>
+        </g>
+      </g>
+    </g>
+  );
+};
+
+const DeskLamp = ({ on = true }) => (
+  <g>
+    <rect x={-3} y={10} width={6} height={4} fill="#3a3a4a" rx="1"/>
+    <ellipse cx={0} cy={10} rx={3.5} ry={0.8} fill="#4a4a5a"/>
+    <path d="M0 10 Q-2 2 4 -2" stroke="#3a3a4a" strokeWidth="2" fill="none" strokeLinecap="round"/>
+    <path d="M-2 -6 L8 -6 L6 2 L-4 2 Z" fill="#FBBF24"/>
+    <path d="M-2 -6 L8 -6 L7 -4 L-1 -4 Z" fill="#fef3c7" opacity="0.5"/>
+    {on && <ellipse cx={2} cy={6} rx={12} ry={6} fill="#FEF3C7" opacity="0.2"/>}
+    {on && <ellipse cx={2} cy={4} rx={5} ry={2} fill="#FEF3C7" opacity="0.35"/>}
+  </g>
+);
+
+const Plant = ({ variant = 0 }) => {
+  if (variant === 1) {
+    return (
+      <g>
+        <path d="M-5 8 L5 8 L4 -1 L-4 -1 Z" fill="#78350f"/>
+        <ellipse cx={0} cy={-1} rx={4.5} ry={1} fill="#92400e"/>
+        <path d="M0 -1 Q-8 -8 -6 -14 M0 -1 Q8 -8 6 -14 M0 -1 L0 -12" stroke="#22C55E" strokeWidth="1.6" strokeLinecap="round" fill="none">
+          <animateTransform attributeName="transform" type="rotate" values="-1.5;1.5;-1.5" dur="5s" repeatCount="indefinite"/>
+        </path>
+        <ellipse cx={-5} cy={-11} rx={2.5} ry={3.5} fill="#22C55E"/>
+        <ellipse cx={5} cy={-11} rx={2.5} ry={3.5} fill="#22C55E"/>
+        <ellipse cx={0} cy={-13} rx={2.5} ry={3.5} fill="#16a34a"/>
+      </g>
+    );
+  }
+  return (
+    <g>
+      <path d="M-4 6 L4 6 L3 -1 L-3 -1 Z" fill="#78350f"/>
+      <ellipse cx={0} cy={-1} rx={3.5} ry={0.8} fill="#92400e"/>
+      <g>
+        <animateTransform attributeName="transform" type="rotate" values="-2;2;-2" dur="4.5s" repeatCount="indefinite"/>
+        <path d="M0 -1 L-4 -8 M0 -1 L4 -8 M0 -1 L0 -10 M0 -1 L-2 -9 M0 -1 L2 -9" stroke="#22C55E" strokeWidth="1.4" strokeLinecap="round"/>
+        <circle cx={-3} cy={-8} r="2" fill="#22C55E"/>
+        <circle cx={3} cy={-8} r="2" fill="#22C55E"/>
+        <circle cx={0} cy={-10} r="2" fill="#16a34a"/>
+      </g>
+    </g>
+  );
+};
+
+const Workstation = ({ agent, teamColor, status, statusColor, seed = 0 }) => {
+  const working = status === "OK";
+  const error = status === "ERROR" || status === "FIXPENDING";
+  return (
+    <g>
+      {/* Floor shadow */}
+      <ellipse cx={0} cy={66} rx={48} ry={8} fill="#000" opacity="0.55"/>
+
+      {/* Desk front panel */}
+      <path d="M-40 36 L40 36 L40 48 L-40 48 Z" fill="#1a0d05"/>
+      {/* Desk top */}
+      <rect x={-40} y={24} width={80} height={12} fill="#5a4530"/>
+      <rect x={-40} y={24} width={80} height={2.5} fill="#7a5f45" opacity="0.85"/>
+      <rect x={-40} y={33.5} width={80} height={2.5} fill="#2a1d10" opacity="0.8"/>
+      {/* Desk edge highlight */}
+      <line x1={-40} y1={24} x2={40} y2={24} stroke="#8a6f55" strokeWidth="0.5" opacity="0.7"/>
+      {/* Legs */}
+      <rect x={-38} y={48} width={4} height={20} fill="#1a0d05"/>
+      <rect x={34} y={48} width={4} height={20} fill="#1a0d05"/>
+      {/* Cable */}
+      <path d="M8 36 Q6 42 8 48" stroke="#0a0a10" strokeWidth="0.8" fill="none"/>
+
+      {/* Agent seated - positioned so head+shoulders peek above monitor */}
+      <g transform="translate(0, -6)">
+        <Humanoid color={teamColor} working={working} seed={seed}/>
+      </g>
+
+      {/* Keyboard */}
+      <g transform="translate(0,31)">
+        <rect x={-16} y={0} width={32} height={4.5} fill="#1a1a28" rx="1"/>
+        <rect x={-15.5} y={0.5} width={31} height={3.5} fill="#0d0d16" rx="0.8"/>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <rect key={i} x={-14 + i * 3.5} y={1} width={2.8} height={2.5} fill="#2a2a3a" rx="0.2"/>
+        ))}
+        <rect x={-10} y={4.8} width={20} height={0.7} fill="#2a2a3a"/>
+      </g>
+      {/* Mouse */}
+      <g transform="translate(20,31)">
+        <rect x={-3} y={0} width={7} height={5} fill={teamColor} opacity="0.25" rx="0.8"/>
+        <ellipse cx={0} cy={2.3} rx={3} ry={2} fill="#1a1a28"/>
+        <ellipse cx={0} cy={2} rx={2.4} ry={1.4} fill="#2a2a3a"/>
+        <line x1={0} y1={0.5} x2={0} y2={3.5} stroke="#1a1a28" strokeWidth="0.4"/>
+      </g>
+
+      {/* Monitor */}
+      <g>
+        {/* Stand */}
+        <rect x={-2.5} y={22} width={5} height={4} fill="#2a2a3a"/>
+        <rect x={-12} y={25} width={24} height={2.5} fill="#1a1a24" rx="1"/>
+        {/* Bezel */}
+        <rect x={-24} y={-5} width={48} height={28} fill="#0a0a10" stroke={teamColor} strokeWidth="1" rx="2.5"/>
+        <rect x={-24} y={-5} width={48} height={2} fill="#2a2a3a" rx="2.5"/>
+        {/* Screen */}
+        <rect x={-22} y={-3} width={44} height={24} fill="#0d1824"/>
+        <rect x={-22} y={-3} width={44} height={24} fill={statusColor} opacity="0.12"/>
+        {/* Top menubar */}
+        <rect x={-21} y={-2} width={42} height={2.4} fill={teamColor} opacity="0.5"/>
+        <circle cx={-18.5} cy={-0.8} r={0.5} fill="#EF4444"/>
+        <circle cx={-16.5} cy={-0.8} r={0.5} fill="#FBBF24"/>
+        <circle cx={-14.5} cy={-0.8} r={0.5} fill="#22C55E"/>
+        {/* Text lines */}
+        <rect x={-20} y={2} width={18} height={1} fill={teamColor} opacity="0.75"/>
+        <rect x={-20} y={4} width={24} height={1} fill={teamColor} opacity="0.55"/>
+        <rect x={-20} y={6} width={14} height={1} fill={statusColor} opacity="0.85"/>
+        <rect x={-20} y={8} width={22} height={1} fill={teamColor} opacity="0.6"/>
+        <rect x={-20} y={10} width={10} height={1} fill={teamColor} opacity="0.5"/>
+        <rect x={-20} y={12} width={28} height={1} fill={teamColor} opacity="0.7"/>
+        <rect x={-20} y={14} width={16} height={1} fill={statusColor} opacity="0.85"/>
+        <rect x={-20} y={16} width={12} height={1} fill={teamColor} opacity="0.45"/>
+        <rect x={-20} y={18} width={20} height={1} fill={teamColor} opacity="0.6"/>
+        {/* Blinking cursor */}
+        {working && (
+          <rect x={-20} y={14} width={2.5} height={1} fill={statusColor}>
+            <animate attributeName="x" values="-20;8;-20" dur="3s" repeatCount="indefinite"/>
+          </rect>
+        )}
+        {error && (
+          <g>
+            <rect x={-14} y={6} width={28} height={10} fill="#EF444422" rx="1"/>
+            <text x={0} y={13} textAnchor="middle" fontSize="5.5" fill="#FCA5A5" fontWeight="700">! ERROR</text>
+          </g>
+        )}
+        {/* Glow */}
+        <rect x={-24} y={-5} width={48} height={28} fill={statusColor} opacity="0.06" rx="2.5"/>
+      </g>
+
+      {/* Desk lamp */}
+      <g transform="translate(-30,16)">
+        <DeskLamp on={working}/>
+      </g>
+
+      {/* Coffee mug with steam */}
+      <g transform="translate(-22,27)">
+        <path d="M-3 -5 L-3 4 Q-3 6 -1 6 L1 6 Q3 6 3 4 L3 -5 Z" fill={teamColor}/>
+        <path d="M-3 -5 L-3 -4 Q-3 -3 -1 -3 L1 -3 Q3 -3 3 -4 L3 -5 Z" fill="#2a1d10" opacity="0.5"/>
+        <ellipse cx={0} cy={-5} rx={3} ry={1} fill="#3a2518"/>
+        <path d="M3 -3 Q6 -3 6 0 Q6 3 3 3" fill="none" stroke={teamColor} strokeWidth="1"/>
+        {working && (
+          <g opacity="0.5">
+            <path d="M-1 -6 Q-0.5 -9 0 -11 Q0.5 -13 0 -15" stroke="#ddd" fill="none" strokeWidth="0.5" strokeLinecap="round">
+              <animate attributeName="opacity" values="0;0.6;0;0.6;0" dur="3s" repeatCount="indefinite"/>
+            </path>
+            <path d="M1.2 -6 Q1.5 -9 1 -11" stroke="#ddd" fill="none" strokeWidth="0.4" strokeLinecap="round">
+              <animate attributeName="opacity" values="0.3;0;0.6;0;0.3" dur="3.5s" repeatCount="indefinite"/>
+            </path>
+          </g>
+        )}
+      </g>
+
+      {/* Side plant */}
+      <g transform="translate(27,22)">
+        <Plant variant={seed % 2}/>
+      </g>
+
+      {/* Paper stack */}
+      <g transform="translate(14,28)">
+        <rect x={-3.5} y={-1.5} width={7} height={4.5} fill="#fff" opacity="0.85" rx="0.3"/>
+        <rect x={-3.5} y={0} width={7} height={4.5} fill="#f0f0f0" opacity="0.75" rx="0.3"/>
+        <line x1={-2.5} y1={1} x2={2.5} y2={1} stroke="#0d0d16" strokeWidth="0.3"/>
+        <line x1={-2.5} y1={2} x2={1.5} y2={2} stroke="#0d0d16" strokeWidth="0.3"/>
+        <line x1={-2.5} y1={3} x2={2.5} y2={3} stroke="#0d0d16" strokeWidth="0.3"/>
+      </g>
+
+      {/* Pen holder */}
+      <g transform="translate(18,23)">
+        <rect x={-2.5} y={-4} width={5} height={7} fill="#2a2a3a" rx="0.5"/>
+        <rect x={-1.8} y={-7} width={0.6} height={4} fill={teamColor}/>
+        <rect x={-0.4} y={-7.5} width={0.6} height={4.5} fill="#EF4444"/>
+        <rect x={1} y={-6.5} width={0.6} height={3.5} fill="#22C55E"/>
+      </g>
+
+      {/* Status LED */}
+      <circle cx={26} cy={-10} r={2.8} fill={statusColor}>
+        <animate attributeName="opacity" values="1;0.4;1" dur={working ? "1.5s" : "3s"} repeatCount="indefinite"/>
+      </circle>
+      <circle cx={26} cy={-10} r={5} fill={statusColor} opacity="0.2">
+        <animate attributeName="r" values="3;7;3" dur="2.5s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.3;0;0.3" dur="2.5s" repeatCount="indefinite"/>
+      </circle>
+
+      {/* Nameplate */}
+      <g transform="translate(0, 58)">
+        <rect x={-30} y={0} width={60} height={10} fill="#0a0a10" stroke={teamColor} strokeOpacity="0.55" strokeWidth="0.5" rx="2"/>
+        <text x={0} y={6.8} textAnchor="middle" fontSize="6.5" fill={teamColor} fontWeight="700" letterSpacing="0.5">{agent.name}</text>
+      </g>
+    </g>
+  );
+};
+
+const RoomZone = ({ team, agents, x, y, width, height, inMeetingSet, agentStatus }) => {
+  const t = T[team];
+  const perRow = 3;
+  const visible = agents.filter(a => !inMeetingSet.has(a.id));
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {/* Floor with subtle gradient */}
+      <rect x={0} y={0} width={width} height={height} fill={t.bg} rx="12"/>
+      <rect x={0} y={0} width={width} height={36} fill="#000" opacity="0.25" rx="12"/>
+      <rect x={0} y={28} width={width} height={8} fill="#000" opacity="0.15"/>
+      {/* Wall dashed border */}
+      <rect x={0} y={0} width={width} height={height} fill="none" stroke={t.c} strokeOpacity="0.4" strokeWidth="2" strokeDasharray="6,4" rx="12"/>
+      {/* Wall accent light */}
+      <rect x={0} y={0} width={width} height={5} fill={t.c} opacity="0.3" rx="12"/>
+
+      {/* Header */}
+      <rect x={0} y={0} width={width} height={30} fill={t.c} opacity="0.16" rx="12"/>
+      <rect x={0} y={22} width={width} height={8} fill={t.c} opacity="0.16"/>
+      <text x={18} y={20} fontSize="11" fill={t.c} fontWeight="700" letterSpacing="2">{t.n}</text>
+      <text x={width - 18} y={22} textAnchor="end" fontSize="18">{t.e}</text>
+      <circle cx={width - 48} cy={15} r={3.5} fill={visible.length > 0 ? "#22C55E" : "#52525b"}>
+        {visible.length > 0 && <animate attributeName="opacity" values="0.4;1;0.4" dur="2.5s" repeatCount="indefinite"/>}
+      </circle>
+      <text x={width - 56} y={19} textAnchor="end" fontSize="8" fill={t.c} opacity="0.75">{visible.length}/{agents.length}</text>
+
+      {/* Desks grid - more spacing */}
+      {visible.map((a, i) => {
+        const col = i % perRow;
+        const row = Math.floor(i / perRow);
+        const cx = (width / perRow) * (col + 0.5);
+        const cy = 82 + row * 108;
+        if (cy > height - 30) return null;
+        const s = agentStatus[a.id] || "IDLE";
+        const sc = STATUS[s]?.color || "#71717a";
+        return (
+          <g key={a.id} transform={`translate(${cx},${cy})`}>
+            <Workstation agent={a} teamColor={t.c} status={s} statusColor={sc} seed={i * 7 + (team.charCodeAt(0) || 1)}/>
+          </g>
+        );
+      })}
+
+      {/* Corner plant */}
+      <g transform={`translate(${width - 32},${height - 32})`}>
+        <rect x={-9} y={0} width={18} height={20} fill="#78350f" rx="1"/>
+        <path d="M0 0 L-11 -18 M0 0 L11 -18 M0 0 L0 -22 M0 0 L-6 -20 M0 0 L6 -20" stroke="#22C55E" strokeWidth="2" strokeLinecap="round">
+          <animateTransform attributeName="transform" type="rotate" values="-1.5;1.5;-1.5" dur="6s" repeatCount="indefinite"/>
+        </path>
+        <circle cx={-6} cy={-17} r="3.5" fill="#22C55E"/>
+        <circle cx={6} cy={-17} r="3.5" fill="#22C55E"/>
+        <circle cx={0} cy={-22} r="3.5" fill="#16a34a"/>
+        <ellipse cx={-4} cy={-14} rx={2.5} ry={2} fill="#16a34a" opacity="0.8"/>
+      </g>
+
+      {/* Bookshelf on opposite corner */}
+      <g transform={`translate(32, ${height - 44})`}>
+        <rect x={-10} y={0} width={20} height={38} fill="#3a2518" rx="1"/>
+        <rect x={-10} y={0} width={20} height={2} fill="#4a2f20"/>
+        <line x1={-10} y1={10} x2={10} y2={10} stroke="#2a1d10" strokeWidth="0.8"/>
+        <line x1={-10} y1={20} x2={10} y2={20} stroke="#2a1d10" strokeWidth="0.8"/>
+        <line x1={-10} y1={30} x2={10} y2={30} stroke="#2a1d10" strokeWidth="0.8"/>
+        {/* Books row 1 */}
+        <rect x={-8} y={3} width={2.2} height={6.5} fill={t.c} opacity="0.8"/>
+        <rect x={-5.5} y={3} width={2.2} height={6.5} fill="#FBBF24" opacity="0.8"/>
+        <rect x={-3} y={3.5} width={2.2} height={6} fill="#22C55E" opacity="0.8"/>
+        <rect x={-0.5} y={3} width={2.2} height={6.5} fill="#60A5FA" opacity="0.8"/>
+        <rect x={2} y={3.5} width={2.2} height={6} fill="#EF4444" opacity="0.7"/>
+        <rect x={4.5} y={3} width={2.2} height={6.5} fill="#8B5CF6" opacity="0.7"/>
+        {/* Row 2 — stack */}
+        <rect x={-8} y={13} width={10} height={6.5} fill="#8B5CF6" opacity="0.6"/>
+        <rect x={3} y={13.5} width={5} height={6} fill={t.c} opacity="0.7"/>
+        {/* Row 3 */}
+        <rect x={-8} y={23} width={2.5} height={6.5} fill={t.c} opacity="0.9"/>
+        <rect x={-5} y={23} width={2.5} height={6.5} fill="#F43F5E" opacity="0.7"/>
+        <rect x={-2} y={23.5} width={2.5} height={6} fill="#22C55E" opacity="0.6"/>
+        {/* Decorative */}
+        <circle cx={5} cy={26} r="2" fill="#FBBF24" opacity="0.8"/>
+        {/* Row 4 */}
+        <rect x={-8} y={33} width={16} height={4} fill="#60A5FA" opacity="0.5"/>
+      </g>
+
+      {/* In-meeting indicator */}
+      {visible.length < agents.length && (
+        <g transform={`translate(${width / 2 - 50}, ${height - 12})`}>
+          <rect x={0} y={-13} width={100} height={15} fill="#8B5CF6" opacity="0.3" rx="3"/>
+          <text x={50} y={-3} textAnchor="middle" fontSize="8" fill="#C4B5FD" fontWeight="700">{agents.length - visible.length} EN SALA DE JUNTAS</text>
+        </g>
+      )}
+    </g>
+  );
+};
+
+const ConferenceRoom = ({ x, y, width, height, participants, active, meetingName, topic }) => {
+  const cx = width / 2;
+  const cy = height / 2 + 16;
+  const tableRx = width * 0.32;
+  const tableRy = height * 0.24;
+  const n = Math.max(participants.length, 1);
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {/* Floor with glass gradient */}
+      <rect x={0} y={0} width={width} height={height} fill="url(#glassGrad)" rx="16"/>
+      {/* Ceiling shadow */}
+      <rect x={0} y={0} width={width} height={30} fill="#000" opacity="0.4" rx="16"/>
+      <rect x={0} y={0} width={width} height={height} fill="none" stroke="#60A5FA" strokeOpacity="0.55" strokeWidth="2.5" rx="16"/>
+
+      {/* Glass vertical divisions */}
+      {[0.14, 0.3, 0.5, 0.68, 0.85].map((f, i) => (
+        <line key={i} x1={width * f} y1={12} x2={width * f} y2={height - 12} stroke="#fff" strokeOpacity="0.05" strokeWidth="1"/>
+      ))}
+      {/* Horizontal glass accent */}
+      <line x1={8} y1={height * 0.6} x2={width - 8} y2={height * 0.6} stroke="#fff" strokeOpacity="0.03" strokeWidth="1"/>
+
+      {/* Ceiling lights */}
+      {[0.28, 0.5, 0.72].map((f, i) => (
+        <g key={i} transform={`translate(${width * f},12)`}>
+          <ellipse cx={0} cy={0} rx={28} ry={5} fill="#FEF3C7" opacity="0.5"/>
+          <ellipse cx={0} cy={8} rx={70} ry={60} fill="#FEF3C7" opacity="0.04"/>
+          <rect x={-22} y={-3} width={44} height={3} fill="#2a2a3a"/>
+        </g>
+      ))}
+
+      {/* Header */}
+      <rect x={18} y={16} width={230} height={24} fill="#60A5FA" opacity="0.2" rx="4"/>
+      <text x={30} y={33} fontSize="13" fill="#60A5FA" fontWeight="700" letterSpacing="3">SALA DE JUNTAS</text>
+      {/* Status */}
+      {active ? (
+        <g transform={`translate(${width - 200},22)`}>
+          <circle cx={10} cy={10} r={6} fill="#EF4444">
+            <animate attributeName="opacity" values="0.4;1;0.4" dur="1.3s" repeatCount="indefinite"/>
+          </circle>
+          <text x={24} y={15} fontSize="11" fill="#FCA5A5" fontWeight="700">REUNION EN VIVO</text>
+        </g>
+      ) : (
+        <text x={width - 22} y={33} textAnchor="end" fontSize="10" fill="#52525b">libre</text>
+      )}
+
+      {/* Meeting name / topic */}
+      {active && meetingName && (
+        <g>
+          <text x={cx} y={58} textAnchor="middle" fontSize="13" fill="#e4e4e7" fontWeight="600">{meetingName}</text>
+          {topic && <text x={cx} y={74} textAnchor="middle" fontSize="10" fill="#71717a">{String(topic).substring(0, 120)}</text>}
+        </g>
+      )}
+
+      {/* Whiteboard */}
+      <g transform={`translate(${width - 160}, ${height - 110})`}>
+        <rect x={-6} y={-6} width={152} height={94} fill="#1a1a24" rx="3"/>
+        <rect x={0} y={0} width={140} height={82} fill="#fff" opacity="0.08" stroke="#60A5FA" strokeOpacity="0.45" strokeWidth="1" rx="2"/>
+        <text x={10} y={14} fontSize="7" fill={active?"#22C55E":"#52525b"} fontWeight="700" opacity="0.9">AGENDA REUNION</text>
+        <line x1={10} y1={22} x2={90} y2={22} stroke={active?"#22C55E":"#52525b"} strokeWidth="1.2" opacity="0.7"/>
+        <line x1={10} y1={32} x2={124} y2={32} stroke={active?"#60A5FA":"#52525b"} strokeWidth="1" opacity="0.55"/>
+        <line x1={10} y1={42} x2={104} y2={42} stroke={active?"#FBBF24":"#52525b"} strokeWidth="1" opacity="0.55"/>
+        <line x1={10} y1={52} x2={118} y2={52} stroke={active?"#60A5FA":"#52525b"} strokeWidth="1" opacity="0.55"/>
+        <line x1={10} y1={62} x2={80} y2={62} stroke={active?"#22C55E":"#52525b"} strokeWidth="1" opacity="0.55"/>
+        <line x1={10} y1={72} x2={98} y2={72} stroke={active?"#F43F5E":"#52525b"} strokeWidth="1" opacity="0.55"/>
+        {/* Marker tray */}
+        <rect x={0} y={88} width={140} height={4} fill="#2a1d10"/>
+        <rect x={16} y={88} width={14} height={3} fill="#EF4444" rx="0.5"/>
+        <rect x={34} y={88} width={14} height={3} fill="#22C55E" rx="0.5"/>
+        <rect x={52} y={88} width={14} height={3} fill="#60A5FA" rx="0.5"/>
+        {/* Eraser */}
+        <rect x={78} y={86} width={20} height={6} fill="#FBBF24" opacity="0.7" rx="1"/>
+      </g>
+
+      {/* Wall clock */}
+      <g transform={`translate(${cx},24)`}>
+        <circle cx={0} cy={0} r={14} fill="#1a1a28" stroke="#60A5FA" strokeOpacity="0.4" strokeWidth="1"/>
+        <circle cx={0} cy={0} r={12} fill="#0a0a10"/>
+        <line x1={0} y1={0} x2={0} y2={-8} stroke="#fff" strokeWidth="1" strokeLinecap="round"/>
+        <line x1={0} y1={0} x2={5} y2={2} stroke="#fff" strokeWidth="0.8" strokeLinecap="round"/>
+        <circle cx={0} cy={0} r={1} fill="#EF4444"/>
+        {[0, 90, 180, 270].map(ang => (
+          <line key={ang} x1={0} y1={-10} x2={0} y2={-12} stroke="#60A5FA" strokeWidth="0.7" transform={`rotate(${ang})`}/>
+        ))}
+      </g>
+
+      {/* Tall plants flanking */}
+      <g transform={`translate(32,${height - 34})`}>
+        <rect x={-10} y={0} width={20} height={22} fill="#78350f" rx="1.5"/>
+        <rect x={-10} y={0} width={20} height={3} fill="#92400e"/>
+        <path d="M0 0 L-12 -20 M0 0 L12 -20 M0 0 L0 -26 M0 0 L-6 -22 M0 0 L6 -22 M0 0 L-10 -16 M0 0 L10 -16" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"/>
+        <circle cx={-8} cy={-18} r="4.5" fill="#22C55E"/>
+        <circle cx={8} cy={-18} r="4.5" fill="#22C55E"/>
+        <circle cx={0} cy={-25} r="4.5" fill="#16a34a"/>
+        <ellipse cx={-4} cy={-14} rx={3} ry={2} fill="#16a34a" opacity="0.8"/>
+      </g>
+      <g transform={`translate(${width - 32},${height - 34})`}>
+        <rect x={-10} y={0} width={20} height={22} fill="#78350f" rx="1.5"/>
+        <rect x={-10} y={0} width={20} height={3} fill="#92400e"/>
+        <path d="M0 0 L-12 -20 M0 0 L12 -20 M0 0 L0 -26 M0 0 L-6 -22 M0 0 L6 -22" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"/>
+        <circle cx={-8} cy={-18} r="4.5" fill="#22C55E"/>
+        <circle cx={8} cy={-18} r="4.5" fill="#22C55E"/>
+        <circle cx={0} cy={-25} r="4.5" fill="#16a34a"/>
+      </g>
+
+      {/* Table floor shadow */}
+      <ellipse cx={cx} cy={cy + tableRy + 12} rx={tableRx + 8} ry={tableRy * 0.18} fill="#000" opacity="0.6"/>
+
+      {/* Table pedestal */}
+      <rect x={cx - 6} y={cy + tableRy - 2} width={12} height={14} fill="#1a0d05"/>
+      <ellipse cx={cx} cy={cy + tableRy + 12} rx={18} ry={3} fill="#2a1d10"/>
+
+      {/* Table side (thickness) */}
+      <path d={`M${cx - tableRx} ${cy} A${tableRx} ${tableRy} 0 0 0 ${cx + tableRx} ${cy} L${cx + tableRx} ${cy + 8} A${tableRx} ${tableRy} 0 0 1 ${cx - tableRx} ${cy + 8} Z`} fill="#2a1d10"/>
+      {/* Table top */}
+      <ellipse cx={cx} cy={cy} rx={tableRx} ry={tableRy} fill="#5a4530"/>
+      <ellipse cx={cx} cy={cy - 3} rx={tableRx - 6} ry={tableRy - 5} fill="#6a5540" opacity="0.7"/>
+      {/* Table highlight */}
+      <ellipse cx={cx - 50} cy={cy - 8} rx={38} ry={8} fill="#fff" opacity="0.08"/>
+
+      {/* Chairs around table (always 8) */}
+      {Array.from({ length: 8 }).map((_, i) => {
+        const ang = (i / 8) * 2 * Math.PI;
+        const cr = tableRx + 28;
+        const crY = tableRy + 22;
+        const px = cx + Math.cos(ang) * cr;
+        const py = cy + Math.sin(ang) * crY;
+        return (
+          <g key={"chair" + i} transform={`translate(${px},${py})`}>
+            <ellipse cx={0} cy={9} rx={9} ry={3} fill="#000" opacity="0.45"/>
+            <rect x={-9} y={-12} width={18} height={5} fill="#1a1a28" rx="1.5"/>
+            <rect x={-8} y={-6} width={16} height={12} fill="#0d0d16" rx="2"/>
+            <rect x={-1} y={6} width={2} height={5} fill="#2a2a3a"/>
+          </g>
+        );
+      })}
+
+      {/* Laptops + participants */}
+      {active && participants.length > 0 && participants.map((a, i) => {
+        const ang = (i / n) * 2 * Math.PI;
+        const cr = tableRx + 28;
+        const crY = tableRy + 22;
+        const px = cx + Math.cos(ang) * cr;
+        const py = cy + Math.sin(ang) * crY;
+        const laprx = tableRx * 0.72;
+        const lapry = tableRy * 0.55;
+        const lx = cx + Math.cos(ang) * laprx;
+        const ly = cy + Math.sin(ang) * lapry;
+        const c = T[a.t]?.c || "#666";
+        const talking = active && i === Math.floor(Date.now() / 3500) % n;
+        return (
+          <g key={"p" + a.id} style={{ transition: "transform 1.5s ease-in-out" }}>
+            {/* Laptop on table */}
+            <g transform={`translate(${lx},${ly})`}>
+              <rect x={-6} y={-3.5} width={12} height={7} fill="#0a0a10" rx="0.8"/>
+              <rect x={-5.3} y={-3} width={10.6} height={6} fill={c} opacity="0.55"/>
+              <rect x={-5.3} y={-3} width={10.6} height={1} fill={c} opacity="0.8"/>
+            </g>
+            {/* Seated agent */}
+            <g transform={`translate(${px},${py})`}>
+              <Humanoid color={c} size={0.9} talking={talking} seed={i * 11 + 3}/>
+              <g transform="translate(0, 28)">
+                <rect x={-24} y={0} width={48} height={11} fill="#0a0a10" stroke={c} strokeOpacity="0.7" strokeWidth="0.5" rx="2"/>
+                <text textAnchor="middle" y={7.5} fontSize="6.5" fill={c} fontWeight="700">{a.name}</text>
+              </g>
+              {talking && (
+                <g transform="translate(16,-16)">
+                  <circle cx={0} cy={0} r="5" fill="#FBBF24" opacity="0.9">
+                    <animate attributeName="opacity" values="0.5;1;0.5" dur="0.9s" repeatCount="indefinite"/>
+                  </circle>
+                  <text x={0} y={2} textAnchor="middle" fontSize="6" fill="#0f0f1a" fontWeight="700">...</text>
+                </g>
+              )}
+            </g>
+          </g>
+        );
+      })}
+
+      {!active && (
+        <text x={cx} y={cy + 4} textAnchor="middle" fontSize="12" fill="#52525b" fontStyle="italic" opacity="0.75">Esperando reunion...</text>
+      )}
+    </g>
+  );
+};
+
+const OfficeView = ({ meetings, agentStatus }) => {
+  const now = Date.now();
+  const active = meetings.find(m => {
+    const age = now - new Date(m.created_at).getTime();
+    return age < 3600000 && m.decision !== "rechazada" && m.status !== "rechazada";
+  });
+  const participantNames = active ? (Array.isArray(active.participants) ? active.participants : []) : [];
+  const inMeetingAgents = A.filter(a => participantNames.includes(a.wf));
+  const inMeetingSet = new Set(inMeetingAgents.map(a => a.id));
+
+  const ZONE_W = 560;
+  const ZONE_H = 400;
+  const GAP = 30;
+  const OFFSET_Y = 370;
+  const OFFSET_X = 34;
+  const teamsOrder = ["cap", "ofi", "din", "com", "reg", "des", "cli", "sal", "rh"];
+  const layouts = teamsOrder.map((team, i) => ({
+    team, x: OFFSET_X + (i % 3) * (ZONE_W + GAP),
+    y: OFFSET_Y + Math.floor(i / 3) * (ZONE_H + GAP)
+  }));
+  const svgW = 3 * ZONE_W + 2 * GAP + 60;
+  const svgH = OFFSET_Y + 3 * (ZONE_H + GAP) + 30;
+
+  return (
+    <div style={{ background:"#06060a", borderRadius:12, padding:12, border:"1px solid #1a1a24" }}>
+      <div style={{ display:"flex", gap:16, alignItems:"center", marginBottom:10, flexWrap:"wrap" }}>
+        <div style={{ fontSize:12, color:"#a1a1aa" }}>{'\uD83C\uDFE2'} Piso ARIA {'\u2014'} {A.length} agentes trabajando</div>
+        <div style={{ flex:1 }}/>
+        <div style={{ fontSize:10, color: active ? "#FCA5A5" : "#52525b", display:"flex", alignItems:"center", gap:6 }}>
+          <span style={{ width:8, height:8, borderRadius:"50%", background: active?"#EF4444":"#52525b", boxShadow: active?"0 0 8px #EF4444":"none" }}/>
+          {active ? `Reunion en curso: ${active.meeting_name}` : "Sala de juntas libre"}
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${svgW} ${svgH}`} style={{ width:"100%", height:"auto", maxHeight:"none", display:"block", background:"#08080c", borderRadius:10 }}>
+        <defs>
+          <linearGradient id="glassGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.14"/>
+            <stop offset="100%" stopColor="#1e3a8a" stopOpacity="0.05"/>
+          </linearGradient>
+          <radialGradient id="floorLight" cx="50%" cy="20%" r="70%">
+            <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.05"/>
+            <stop offset="100%" stopColor="#000" stopOpacity="0"/>
+          </radialGradient>
+          <pattern id="carpet" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+            <rect width="32" height="32" fill="#0a0a10"/>
+            <circle cx="16" cy="16" r="0.8" fill="#2a2a3a" opacity="0.5"/>
+            <circle cx="0" cy="0" r="0.4" fill="#2a2a3a" opacity="0.3"/>
+            <line x1="0" y1="16" x2="32" y2="16" stroke="#1a1a24" strokeWidth="0.3" opacity="0.25"/>
+            <line x1="16" y1="0" x2="16" y2="32" stroke="#1a1a24" strokeWidth="0.3" opacity="0.25"/>
+          </pattern>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="1.5"/>
+          </filter>
+        </defs>
+        <rect width={svgW} height={svgH} fill="url(#carpet)"/>
+        <rect width={svgW} height={svgH} fill="url(#floorLight)"/>
+
+        {/* Walkway highlights between rows */}
+        {[OFFSET_Y - 6, OFFSET_Y + ZONE_H + GAP / 2 - 6, OFFSET_Y + 2 * (ZONE_H + GAP) - GAP / 2 - 6].map((yy, i) => (
+          <rect key={"h"+i} x={0} y={yy} width={svgW} height={3} fill="#60A5FA" opacity="0.08"/>
+        ))}
+
+        {/* Ceiling windows across top (daylight) */}
+        <g opacity="0.6">
+          {[0.1, 0.3, 0.5, 0.7, 0.9].map((f, i) => (
+            <g key={i} transform={`translate(${svgW * f}, 4)`}>
+              <rect x={-40} y={0} width={80} height={10} fill="#60A5FA" opacity="0.1" rx="2"/>
+              <line x1={-40} y1={5} x2={40} y2={5} stroke="#60A5FA" strokeOpacity="0.3" strokeWidth="0.5"/>
+            </g>
+          ))}
+        </g>
+
+        {/* Water cooler in corner */}
+        <g transform={`translate(${svgW - 90}, ${svgH - 260})`}>
+          <rect x={-14} y={0} width={28} height={38} fill="#60A5FA" opacity="0.2" rx="3" stroke="#60A5FA" strokeOpacity="0.6"/>
+          <rect x={-12} y={5} width={24} height={22} fill="#60A5FA" opacity="0.35"/>
+          {/* Bubbles */}
+          <circle cx={-6} cy={15} r={1.5} fill="#fff" opacity="0.7">
+            <animate attributeName="cy" values="22;8;22" dur="2.5s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx={3} cy={19} r={1.8} fill="#fff" opacity="0.6">
+            <animate attributeName="cy" values="25;10;25" dur="3.2s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx={-2} cy={23} r={1.2} fill="#fff" opacity="0.8">
+            <animate attributeName="cy" values="25;12;25" dur="2.8s" repeatCount="indefinite"/>
+          </circle>
+          {/* Spout */}
+          <rect x={-4} y={29} width={8} height={3} fill="#1a1a28"/>
+          <rect x={-5} y={32} width={10} height={5} fill="#2a2a3a" rx="0.5"/>
+          <text x={0} y={47} textAnchor="middle" fontSize="7" fill="#60A5FA" opacity="0.7" fontWeight="600">AGUA</text>
+        </g>
+
+        {/* Printer */}
+        <g transform={`translate(${svgW - 90}, ${svgH - 180})`}>
+          <rect x={-20} y={0} width={40} height={24} fill="#2a2a3a" rx="3"/>
+          <rect x={-18} y={2} width={36} height={5} fill="#1a1a24" rx="1"/>
+          <rect x={-18} y={16} width={36} height={2} fill="#0d0d16"/>
+          {/* Paper sticking out */}
+          <rect x={-10} y={16} width={20} height={6} fill="#fff" opacity="0.9"/>
+          <line x1={-8} y1={19} x2={8} y2={19} stroke="#0d0d16" strokeWidth="0.3"/>
+          {/* LEDs */}
+          <circle cx={-14} cy={10} r={1.5} fill="#22C55E">
+            <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx={-10} cy={10} r={1.2} fill="#FBBF24"/>
+          <text x={0} y={34} textAnchor="middle" fontSize="7" fill="#52525b" fontWeight="600">IMPRESORA</text>
+        </g>
+
+        {/* Coffee machine */}
+        <g transform={`translate(90, ${svgH - 260})`}>
+          <rect x={-16} y={0} width={32} height={36} fill="#3a2518" rx="3"/>
+          <rect x={-13} y={4} width={26} height={10} fill="#0d0d16" rx="1"/>
+          {/* Screen */}
+          <rect x={-11} y={6} width={22} height={6} fill="#22C55E" opacity="0.5"/>
+          <text x={0} y={10.5} textAnchor="middle" fontSize="4" fill="#22C55E" fontWeight="700">LISTO</text>
+          {/* Button panel */}
+          <circle cx={-9} cy={18} r={1.5} fill="#EF4444"/>
+          <circle cx={-4} cy={18} r={1.2} fill="#FBBF24"/>
+          <circle cx={1} cy={18} r={1.2} fill="#22C55E"/>
+          <circle cx={6} cy={18} r={1.2} fill="#60A5FA"/>
+          {/* Drip tray */}
+          <rect x={-10} y={22} width={20} height={7} fill="#1a1a24" rx="0.5"/>
+          <rect x={-4} y={29} width={8} height={5} fill="#2a2a3a"/>
+          {/* Steam */}
+          <g opacity="0.4">
+            <path d="M0 -2 Q-1 -5 0 -9" stroke="#ddd" fill="none" strokeWidth="0.6" strokeLinecap="round">
+              <animate attributeName="opacity" values="0;0.5;0" dur="2.5s" repeatCount="indefinite"/>
+            </path>
+          </g>
+          <text x={0} y={46} textAnchor="middle" fontSize="7" fill="#a1a1aa" fontWeight="600">CAFE</text>
+        </g>
+
+        {/* Big lounge plant left side */}
+        <g transform={`translate(60, ${svgH - 100})`}>
+          <rect x={-14} y={0} width={28} height={28} fill="#4a2f20" rx="2"/>
+          <rect x={-14} y={0} width={28} height={4} fill="#6a4530"/>
+          <path d="M0 0 L-16 -28 M0 0 L16 -28 M0 0 L0 -34 M0 0 L-8 -30 M0 0 L8 -30 M0 0 L-12 -22 M0 0 L12 -22" stroke="#22C55E" strokeWidth="2.2" strokeLinecap="round">
+            <animateTransform attributeName="transform" type="rotate" values="-2;2;-2" dur="7s" repeatCount="indefinite"/>
+          </path>
+          <circle cx={-10} cy={-26} r="5" fill="#22C55E"/>
+          <circle cx={10} cy={-26} r="5" fill="#22C55E"/>
+          <circle cx={0} cy={-32} r="5" fill="#16a34a"/>
+          <ellipse cx={-5} cy={-22} rx={3.5} ry={3} fill="#16a34a" opacity="0.85"/>
+          <ellipse cx={6} cy={-20} rx={3} ry={2.5} fill="#22C55E" opacity="0.85"/>
+        </g>
+
+        {/* Office sign */}
+        <g transform={`translate(${svgW / 2}, 16)`}>
+          <rect x={-120} y={-2} width={240} height={16} fill="#1a1a28" stroke="#60A5FA" strokeOpacity="0.5" strokeWidth="1" rx="3"/>
+          <text x={0} y={10} textAnchor="middle" fontSize="10" fill="#60A5FA" fontWeight="700" letterSpacing="4">OFICINA ARIA {'\u2014'} PISO PRINCIPAL</text>
+        </g>
+
+        {/* Conference room */}
+        <ConferenceRoom x={OFFSET_X} y={36} width={3 * ZONE_W + 2 * GAP} height={300}
+          participants={inMeetingAgents} active={!!active}
+          meetingName={active?.meeting_name} topic={active?.topic}/>
+
+        {/* Team zones */}
+        {layouts.map(l => (
+          <RoomZone key={l.team} team={l.team}
+            agents={A.filter(a => a.t === l.team)}
+            x={l.x} y={l.y} width={ZONE_W} height={ZONE_H}
+            inMeetingSet={inMeetingSet} agentStatus={agentStatus}/>
+        ))}
+      </svg>
+      <div style={{ marginTop:10, padding:10, background:"#0a0a10", borderRadius:6, fontSize:10, color:"#71717a", lineHeight:1.6 }}>
+        {'\u2139'} Los agentes estan tecleando, parpadean cada pocos segundos y respiran levemente. Cuando hay una reunion (meeting {'<'} 60min), los participantes se levantan y van a la sala de juntas, donde se alternan para "hablar" (burbuja amarilla). La oficina incluye: cooler de agua burbujeante, cafetera con vapor, impresora con LED de estado, libreros con tomos del color del equipo, pizarra con agenda, reloj de pared, lampara de escritorio por persona, tazas de cafe humeantes.
+      </div>
+    </div>
+  );
+};
+
 // --- MEETING REQUEST MODAL ---
 const MEETING_TEMPLATES = [
   { name: "Retro Semanal", reason: "retro", suggested: ["Seguimiento 1", "Reportes 3", "Finanzas 3", "Academia 7"], desc: "Revision de la semana: KPIs, errores, bloqueos" },
@@ -745,8 +1471,8 @@ function MissionControlApp() {
         participants: participants,
         trigger_reason: trigger_reason || "on_demand",
         is_on_demand: true,
-        status: "requested",
-        decision: "requested",
+        status: "scheduled",
+        decision: "pendiente",
         insights: [],
         proposals: [],
         data_analyzed: { priority: priority || "media", requested_by: "victor.muris", requested_at: new Date().toISOString() }
@@ -1015,14 +1741,14 @@ function MissionControlApp() {
       </div>
 
       <div style={{ padding:"12px 24px", display:"flex", gap:6, alignItems:"center", flexWrap:"wrap", borderBottom:"1px solid #1a1a24" }}>
-        {["grid","feed","alerts","memory","meetings"].map(v => (
+        {["grid","office","feed","alerts","memory","meetings"].map(v => (
           <button key={v} onClick={() => setView(v)} className="btn" style={{
             border: "1px solid " + (view===v ? "#2a2a3a" : "transparent"),
             background: view===v ? "#1a1a24" : "transparent",
             color: view===v ? "#fff" : "#52525b",
             fontWeight:500
           }}>
-            {v==="grid" ? "Mission Rooms" : v==="feed" ? `Activity (${logs.length})` : v==="meetings" ? `Reuniones (${meetings.length})` : v==="memory" ? `Memoria (${memories.length})` : `Alertas (${alerts.length + health.length})`}
+            {v==="grid" ? "Mission Rooms" : v==="office" ? `\uD83C\uDFE2 Oficina` : v==="feed" ? `Activity (${logs.length})` : v==="meetings" ? `Reuniones (${meetings.length})` : v==="memory" ? `Memoria (${memories.length})` : `Alertas (${alerts.length + health.length})`}
           </button>
         ))}
       </div>
@@ -1063,6 +1789,8 @@ function MissionControlApp() {
       )}
 
       <div style={{ padding:"20px 24px" }}>
+        {view === "office" && <OfficeView meetings={meetings} agentStatus={agentStatus}/>}
+
         {view === "grid" && (
           filteredAgents.length === 0 ? (
             <div style={{ padding:60, textAlign:"center", color:"#52525b", fontSize:13 }}>
@@ -1318,6 +2046,24 @@ function MissionControlApp() {
                         <span>{proposals.length} propuestas</span>
                         <span style={{ marginLeft:"auto" }}>{tA(m.created_at)}</span>
                       </div>
+                      {Array.isArray(m.sent_emails) && m.sent_emails.length > 0 && (
+                        <div style={{ marginTop:10, padding:10, background:"#0a0a10", borderRadius:6, border:"1px solid #1e3a8a" }}>
+                          <div style={{ fontSize:9, color:"#60A5FA", textTransform:"uppercase", letterSpacing:1, fontWeight:700, marginBottom:6 }}>
+                            {'\uD83D\uDCE7'} Correos enviados autonomamente ({m.sent_emails.length})
+                          </div>
+                          {m.sent_emails.map((se, i) => (
+                            <div key={i} style={{ fontSize:10, color:"#a1a1aa", padding:"4px 0", borderBottom: i < m.sent_emails.length - 1 ? "1px solid #1a1a24" : "none" }}>
+                              <span style={{ color:"#60A5FA" }}>{se.to || se.to_email}</span>
+                              <span style={{ color:"#52525b" }}> {'\u2022'} {se.proposals_count || 0} propuesta(s) {'\u2022'} </span>
+                              <span style={{ color:"#71717a" }}>{se.sent_at ? tA(se.sent_at) : ""}</span>
+                              {se.subject && <div style={{ fontSize:9, color:"#71717a", marginTop:2 }}>{'\u21B3'} {se.subject}</div>}
+                            </div>
+                          ))}
+                          <div style={{ fontSize:9, color:"#52525b", marginTop:6, fontStyle:"italic" }}>
+                            Victor CC en todos los correos {'\u2022'} JEFA dara seguimiento via pendientes_tracker
+                          </div>
+                        </div>
+                      )}
                       {(insights.length > 0 || proposals.length > 0) && (
                         <details style={{ marginTop:8 }}>
                           <summary>Ver insights y propuestas</summary>
